@@ -44,6 +44,23 @@ router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Bulk delete company research
+router.delete('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await prisma.companyResearch.deleteMany({
+      where: { id: { in: ids }, userId: req.userId }
+    });
+    res.json({ deleted: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete items' });
+  }
+});
+
 // Get single company
 router.get('/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -207,22 +224,42 @@ router.post('/ai/analyze', authenticateToken, async (req: AuthRequest, res: Resp
 
     const analysis = await openRouterService.analyzeCompany(companyName, role);
 
-    // Optionally save to database
-    const company = await prisma.companyResearch.create({
-      data: {
-        userId: req.userId,
-        companyName,
-        description: analysis.overview,
-        culture: analysis.culture,
-        interviewProcess: analysis.interviewTips.join('\n'),
-        prosNotes: analysis.prosAndCons.pros.join('\n'),
-        consNotes: analysis.prosAndCons.cons.join('\n')
-      }
-    });
+    // Save company research to DB
+    let companyResearchId = null;
+    try {
+      const saved = await prisma.companyResearch.create({
+        data: {
+          userId: req.userId,
+          companyName,
+          description: analysis.overview,
+          culture: analysis.culture,
+          interviewProcess: analysis.interviewTips?.join('\n'),
+          prosNotes: analysis.prosAndCons?.pros?.join('\n'),
+          consNotes: analysis.prosAndCons?.cons?.join('\n')
+        }
+      });
+      companyResearchId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (company research):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_company_analyze',
+          entityType: 'company',
+          entityId: companyResearchId || undefined,
+          metadata: { companyName, role }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
 
     res.json({
       ...analysis,
-      savedCompany: company
+      companyResearchId
     });
   } catch (error) {
     console.error('AI analyze company error:', error);

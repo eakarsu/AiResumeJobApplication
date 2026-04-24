@@ -5,6 +5,9 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import Resumes from './pages/Resumes';
 import ResumeDetail from './pages/ResumeDetail';
 import CoverLetters from './pages/CoverLetters';
@@ -25,6 +28,10 @@ import Network from './pages/Network';
 import ContactDetail from './pages/ContactDetail';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
+import AIJobMatcher from './pages/AIJobMatcher';
+import AIKeywordOptimizer from './pages/AIKeywordOptimizer';
+import AICoverLetterPersonalizer from './pages/AICoverLetterPersonalizer';
+import AISalaryNegotiator from './pages/AISalaryNegotiator';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
@@ -49,6 +56,9 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       <Route path="/" element={
         <ProtectedRoute>
@@ -67,6 +77,10 @@ function App() {
         <Route path="interviews" element={<Interviews />} />
         <Route path="interviews/:id" element={<InterviewDetail />} />
         <Route path="interview-prep" element={<InterviewPrep />} />
+        <Route path="ai-job-matcher" element={<AIJobMatcher />} />
+        <Route path="ai-keyword-optimizer" element={<AIKeywordOptimizer />} />
+        <Route path="ai-cover-letter" element={<AICoverLetterPersonalizer />} />
+        <Route path="ai-salary-negotiator" element={<AISalaryNegotiator />} />
         <Route path="skills" element={<Skills />} />
         <Route path="salary" element={<Salary />} />
         <Route path="salary/:id" element={<SalaryDetail />} />

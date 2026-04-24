@@ -43,6 +43,23 @@ router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Bulk delete salary research
+router.delete('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await prisma.salaryResearch.deleteMany({
+      where: { id: { in: ids }, userId: req.userId }
+    });
+    res.json({ deleted: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete items' });
+  }
+});
+
 // Get single salary entry
 router.get('/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -153,7 +170,43 @@ router.post('/ai/insights', authenticateToken, async (req: AuthRequest, res: Res
       industry
     });
 
-    res.json(insights);
+    // Save salary research to DB
+    let salaryResearchId = null;
+    try {
+      const saved = await prisma.salaryResearch.create({
+        data: {
+          userId: req.userId!,
+          jobTitle,
+          location,
+          experienceLevel,
+          industry: industry || null,
+          salaryMin: insights.salaryRange.min,
+          salaryMax: insights.salaryRange.max,
+          salaryMedian: insights.salaryRange.median,
+          salaryCurrency: 'USD',
+          dataSource: 'ai_generated'
+        }
+      });
+      salaryResearchId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (salary research):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_salary_insights',
+          entityType: 'salary',
+          entityId: salaryResearchId || undefined,
+          metadata: { jobTitle, location, experienceLevel, median: insights.salaryRange.median }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
+    res.json({ ...insights, salaryResearchId });
   } catch (error) {
     console.error('AI salary insights error:', error);
     res.status(500).json({ error: 'Failed to get salary insights' });

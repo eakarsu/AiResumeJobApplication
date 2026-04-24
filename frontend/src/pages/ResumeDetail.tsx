@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { resumesAPI } from '../services/api';
 import { Resume } from '../types';
 import { ArrowLeft, Save, Sparkles, Plus, Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const ResumeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [resume, setResume] = useState<Resume | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +29,17 @@ const ResumeDetail: React.FC = () => {
       console.error('Failed to fetch resume:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this resume?')) return;
+    try {
+      await resumesAPI.delete(id!);
+      addToast('success', 'Resume deleted successfully');
+      navigate('/resumes');
+    } catch (error) {
+      addToast('error', 'Failed to delete resume');
     }
   };
 
@@ -166,6 +179,9 @@ const ResumeDetail: React.FC = () => {
           <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center space-x-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{saving ? 'Saving...' : 'Save'}</span>
+          </button>
+          <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+            <Trash2 className="w-4 h-4" /><span>Delete</span>
           </button>
         </div>
       </div>

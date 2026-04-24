@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { applicationsAPI } from '../services/api';
 import { JobApplication } from '../types';
-import { ArrowLeft, Save, Building2, Calendar, MapPin, User, Mail, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Building2, Calendar, MapPin, User, Mail, Clock, CheckCircle, Loader2, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const ApplicationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [application, setApplication] = useState<JobApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +27,17 @@ const ApplicationDetail: React.FC = () => {
       console.error('Failed to fetch application:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this application?')) return;
+    try {
+      await applicationsAPI.delete(id!);
+      addToast('success', 'Application deleted successfully');
+      navigate('/applications');
+    } catch (error) {
+      addToast('error', 'Failed to delete application');
     }
   };
 
@@ -68,10 +81,15 @@ const ApplicationDetail: React.FC = () => {
             <p className="text-gray-500">{application.companyName}</p>
           </div>
         </div>
-        <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center space-x-2">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          <span>Save</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+            <Trash2 className="w-4 h-4" /><span>Delete</span>
+          </button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center space-x-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>Save</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

@@ -35,12 +35,22 @@ export const authAPI = {
     api.post('/auth/login', { email, password }),
   register: (data: any) =>
     api.post('/auth/register', data),
+  logout: () =>
+    api.post('/auth/logout'),
   getMe: () =>
     api.get('/auth/me'),
   updateProfile: (data: any) =>
     api.put('/auth/profile', data),
   changePassword: (currentPassword: string, newPassword: string) =>
-    api.put('/auth/password', { currentPassword, newPassword })
+    api.put('/auth/password', { currentPassword, newPassword }),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+  resetPassword: (token: string, password: string) =>
+    api.post('/auth/reset-password', { token, password }),
+  verifyEmail: (token: string) =>
+    api.get(`/auth/verify-email?token=${token}`),
+  resendVerification: () =>
+    api.post('/auth/resend-verification'),
 };
 
 // Resumes API
@@ -50,6 +60,7 @@ export const resumesAPI = {
   create: (data: any) => api.post('/resumes', data),
   update: (id: string, data: any) => api.put(`/resumes/${id}`, data),
   delete: (id: string) => api.delete(`/resumes/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/resumes/bulk', { data: { ids } }),
   generateSummary: (id: string, targetRole?: string) =>
     api.post(`/resumes/${id}/ai/summary`, { targetRole }),
   optimize: (id: string, jobDescription?: string) =>
@@ -65,6 +76,7 @@ export const coverLettersAPI = {
   create: (data: any) => api.post('/cover-letters', data),
   update: (id: string, data: any) => api.put(`/cover-letters/${id}`, data),
   delete: (id: string) => api.delete(`/cover-letters/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/cover-letters/bulk', { data: { ids } }),
   generate: (data: { jobTitle: string; company: string; jobDescription?: string; resumeId?: string; tone?: string }) =>
     api.post('/cover-letters/ai/generate', data)
 };
@@ -88,6 +100,8 @@ export const applicationsAPI = {
   create: (data: any) => api.post('/applications', data),
   update: (id: string, data: any) => api.put(`/applications/${id}`, data),
   delete: (id: string) => api.delete(`/applications/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/applications/bulk', { data: { ids } }),
+  bulkUpdate: (ids: string[], data: any) => api.patch('/applications/bulk', { ids, ...data }),
   getStats: () => api.get('/applications/stats/summary'),
   addTimeline: (id: string, data: { eventType: string; description?: string }) =>
     api.post(`/applications/${id}/timeline`, data)
@@ -100,6 +114,7 @@ export const interviewsAPI = {
   create: (data: any) => api.post('/interviews', data),
   update: (id: string, data: any) => api.put(`/interviews/${id}`, data),
   delete: (id: string) => api.delete(`/interviews/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/interviews/bulk', { data: { ids } }),
   generateQuestions: (id: string, data: any) =>
     api.post(`/interviews/${id}/ai/prep-questions`, data),
   evaluateAnswer: (question: string, answer: string, context?: string) =>
@@ -117,7 +132,9 @@ export const skillsAPI = {
   removeUserSkill: (skillId: string) => api.delete(`/skills/user/${skillId}`),
   getTrending: () => api.get('/skills/trending'),
   analyzeGap: (targetRole: string, industry?: string) =>
-    api.post('/skills/ai/gap-analysis', { targetRole, industry })
+    api.post('/skills/ai/gap-analysis', { targetRole, industry }),
+  getGapAnalyses: () => api.get('/skills/ai/gap-analyses'),
+  deleteGapAnalysis: (id: string) => api.delete(`/skills/ai/gap-analyses/${id}`)
 };
 
 // Salary API
@@ -127,6 +144,7 @@ export const salaryAPI = {
   create: (data: any) => api.post('/salary', data),
   getUserSaved: () => api.get('/salary/user/saved'),
   delete: (id: string) => api.delete(`/salary/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/salary/bulk', { data: { ids } }),
   getInsights: (data: any) => api.post('/salary/ai/insights', data),
   compare: (data: { jobTitle: string; locations: string[]; experienceLevel: string }) =>
     api.post('/salary/compare', data)
@@ -139,6 +157,7 @@ export const companiesAPI = {
   create: (data: any) => api.post('/companies', data),
   update: (id: string, data: any) => api.put(`/companies/${id}`, data),
   delete: (id: string) => api.delete(`/companies/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/companies/bulk', { data: { ids } }),
   toggleBookmark: (id: string) => api.post(`/companies/${id}/bookmark`),
   getBookmarked: () => api.get('/companies/user/bookmarked'),
   analyze: (companyName: string, role?: string) =>
@@ -152,6 +171,7 @@ export const networkAPI = {
   create: (data: any) => api.post('/network', data),
   update: (id: string, data: any) => api.put(`/network/${id}`, data),
   delete: (id: string) => api.delete(`/network/${id}`),
+  bulkDelete: (ids: string[]) => api.delete('/network/bulk', { data: { ids } }),
   addInteraction: (id: string, data: any) => api.post(`/network/${id}/interactions`, data),
   getFollowUpNeeded: () => api.get('/network/followup/needed'),
   getStats: () => api.get('/network/stats/summary'),

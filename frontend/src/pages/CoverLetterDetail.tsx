@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { coverLettersAPI } from '../services/api';
 import { CoverLetter } from '../types';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const CoverLetterDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [letter, setLetter] = useState<CoverLetter | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,6 +28,17 @@ const CoverLetterDetail: React.FC = () => {
       console.error('Failed to fetch cover letter:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this cover letter?')) return;
+    try {
+      await coverLettersAPI.delete(id!);
+      addToast('success', 'Cover letter deleted successfully');
+      navigate('/cover-letters');
+    } catch (error) {
+      addToast('error', 'Failed to delete cover letter');
     }
   };
 
@@ -81,6 +94,9 @@ const CoverLetterDetail: React.FC = () => {
           <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center space-x-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{saving ? 'Saving...' : 'Save'}</span>
+          </button>
+          <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+            <Trash2 className="w-4 h-4" /><span>Delete</span>
           </button>
         </div>
       </div>

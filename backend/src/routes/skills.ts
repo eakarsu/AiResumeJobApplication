@@ -134,6 +134,38 @@ router.delete('/user/:skillId', authenticateToken, async (req: AuthRequest, res:
   }
 });
 
+// Get saved skills gap analyses for user
+router.get('/ai/gap-analyses', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const analyses = await prisma.skillsGapAnalysis.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+    res.json(analyses);
+  } catch (error) {
+    console.error('Get skills gap analyses error:', error);
+    res.status(500).json({ error: 'Failed to get analyses' });
+  }
+});
+
+// Delete a saved skills gap analysis
+router.delete('/ai/gap-analyses/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const existing = await prisma.skillsGapAnalysis.findFirst({
+      where: { id: req.params.id, userId: req.userId }
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'Analysis not found' });
+    }
+    await prisma.skillsGapAnalysis.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Analysis deleted' });
+  } catch (error) {
+    console.error('Delete skills gap analysis error:', error);
+    res.status(500).json({ error: 'Failed to delete analysis' });
+  }
+});
+
 // AI: Analyze skills gap
 router.post('/ai/gap-analysis', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -149,9 +181,44 @@ router.post('/ai/gap-analysis', authenticateToken, async (req: AuthRequest, res:
 
     const analysis = await openRouterService.analyzeSkillsGap(currentSkills, targetRole, industry);
 
+    // Save skills gap analysis to DB
+    let skillsGapAnalysisId = null;
+    try {
+      const saved = await prisma.skillsGapAnalysis.create({
+        data: {
+          userId: req.userId!,
+          targetRole,
+          industry: industry || null,
+          currentSkills: currentSkills || [],
+          missingSkills: analysis.missingSkills || [],
+          learningPath: analysis.learningPath || [],
+          resources: analysis.resources || [],
+          timeline: analysis.timeline || null
+        }
+      });
+      skillsGapAnalysisId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (skills gap analysis):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_skills_gap',
+          entityType: 'skill',
+          entityId: skillsGapAnalysisId || undefined,
+          metadata: { targetRole, industry, missingCount: analysis.missingSkills?.length }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
     res.json({
       currentSkills,
-      ...analysis
+      ...analysis,
+      skillsGapAnalysisId
     });
   } catch (error) {
     console.error('AI skills gap error:', error);

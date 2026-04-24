@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { applicationsAPI } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { JobApplication } from '../types';
-import { Plus, ClipboardList, Building2, Calendar, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, ClipboardList, Building2 } from 'lucide-react';
+import DataTable, { Column } from '../components/DataTable';
+import ExportButtons from '../components/ExportButtons';
+import BulkActionBar from '../components/BulkActionBar';
+import { useTableSort } from '../hooks/useTableSort';
+import { useSelection } from '../hooks/useSelection';
+import { SkeletonTable } from '../components/Skeleton';
 
 const Applications: React.FC = () => {
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -11,6 +18,7 @@ const Applications: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ companyName: '', position: '', location: '', status: 'applied' });
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetchApplications();
@@ -27,24 +35,40 @@ const Applications: React.FC = () => {
     }
   };
 
+  const { sort, toggleSort, sortedData } = useTableSort(applications, 'applicationDate');
+  const { selectedIds, toggle, toggleAll, clearSelection, allSelected, selectedCount } = useSelection(sortedData);
+
   const handleCreate = async () => {
     try {
       const response = await applicationsAPI.create(formData);
       setShowModal(false);
+      addToast('success', 'Application created');
       navigate(`/applications/${response.data.id}`);
     } catch (error) {
-      console.error('Failed to create application:', error);
+      addToast('error', 'Failed to create application');
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Delete this application?')) return;
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedCount} application(s)?`)) return;
     try {
-      await applicationsAPI.delete(id);
-      setApplications(applications.filter(a => a.id !== id));
+      await applicationsAPI.bulkDelete(Array.from(selectedIds));
+      setApplications(applications.filter(a => !selectedIds.has(a.id)));
+      clearSelection();
+      addToast('success', `Deleted ${selectedCount} application(s)`);
     } catch (error) {
-      console.error('Failed to delete application:', error);
+      addToast('error', 'Failed to delete applications');
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status: string) => {
+    try {
+      await applicationsAPI.bulkUpdate(Array.from(selectedIds), { status });
+      setApplications(applications.map(a => selectedIds.has(a.id) ? { ...a, status } : a));
+      clearSelection();
+      addToast('success', `Updated ${selectedCount} application(s) to "${status}"`);
+    } catch (error) {
+      addToast('error', 'Failed to update applications');
     }
   };
 
@@ -58,9 +82,48 @@ const Applications: React.FC = () => {
 
   const statuses = ['', 'applied', 'screening', 'interview', 'offer', 'rejected', 'accepted', 'withdrawn'];
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>;
-  }
+  const columns: Column<JobApplication>[] = [
+    {
+      key: 'companyName', label: 'Company', sortable: true,
+      render: (app) => (
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+            <Building2 className="w-4 h-4 text-gray-400" />
+          </div>
+          <span className="font-medium text-gray-900">{app.companyName}</span>
+        </div>
+      )
+    },
+    { key: 'position', label: 'Position', sortable: true },
+    {
+      key: 'status', label: 'Status', sortable: true,
+      render: (app) => <span className={`status-badge ${getStatusColor(app.status)}`}>{app.status}</span>
+    },
+    {
+      key: 'applicationDate', label: 'Date', sortable: true,
+      render: (app) => <span className="text-gray-500">{new Date(app.applicationDate).toLocaleDateString()}</span>
+    },
+    {
+      key: 'priority', label: 'Priority', sortable: true,
+      render: (app) => (
+        <div className="flex">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span key={n} className={`w-2 h-2 rounded-full mr-1 ${n <= app.priority ? 'bg-yellow-400' : 'bg-gray-200'}`} />
+          ))}
+        </div>
+      )
+    },
+  ];
+
+  const exportColumns = [
+    { key: 'companyName', label: 'Company' },
+    { key: 'position', label: 'Position' },
+    { key: 'status', label: 'Status' },
+    { key: 'applicationDate', label: 'Date' },
+    { key: 'priority', label: 'Priority' },
+  ];
+
+  if (loading) return <SkeletonTable rows={8} cols={5} />;
 
   return (
     <div className="space-y-6">
@@ -69,9 +132,12 @@ const Applications: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Applications</h1>
           <p className="text-gray-500">Track your job applications</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center space-x-2">
-          <Plus className="w-5 h-5" /><span>Add Application</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <ExportButtons data={sortedData} columns={exportColumns} filename="applications" />
+          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center space-x-2">
+            <Plus className="w-5 h-5" /><span>Add Application</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -89,7 +155,6 @@ const Applications: React.FC = () => {
         ))}
       </div>
 
-      {/* Applications List */}
       {applications.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <ClipboardList className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -98,52 +163,28 @@ const Applications: React.FC = () => {
           <button onClick={() => setShowModal(true)} className="btn-primary">Add Application</button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {applications.map((app) => (
-                <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} className="hover:bg-gray-50 cursor-pointer">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                        <Building2 className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <span className="font-medium text-gray-900">{app.companyName}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{app.position}</td>
-                  <td className="px-6 py-4">
-                    <span className={`status-badge ${getStatusColor(app.status)}`}>{app.status}</span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 text-sm">{new Date(app.applicationDate).toLocaleDateString()}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <span key={n} className={`w-2 h-2 rounded-full mr-1 ${n <= app.priority ? 'bg-yellow-400' : 'bg-gray-200'}`} />
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button onClick={(e) => handleDelete(app.id, e)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-500">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          data={sortedData}
+          columns={columns}
+          sort={sort}
+          onSort={toggleSort}
+          selectable
+          selectedIds={selectedIds}
+          onToggle={toggle}
+          onToggleAll={toggleAll}
+          allSelected={allSelected}
+          onRowClick={(app) => navigate(`/applications/${app.id}`)}
+          getRowId={(app) => app.id}
+        />
       )}
+
+      <BulkActionBar
+        selectedCount={selectedCount}
+        onDelete={handleBulkDelete}
+        onStatusUpdate={handleBulkStatusUpdate}
+        onClear={clearSelection}
+        statusOptions={['applied', 'screening', 'interview', 'offer', 'rejected', 'accepted', 'withdrawn']}
+      />
 
       {/* Add Modal */}
       {showModal && (

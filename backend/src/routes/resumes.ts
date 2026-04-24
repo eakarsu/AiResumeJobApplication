@@ -19,6 +19,23 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Bulk delete resumes
+router.delete('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await prisma.resume.deleteMany({
+      where: { id: { in: ids }, userId: req.userId }
+    });
+    res.json({ deleted: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete items' });
+  }
+});
+
 // Get single resume
 router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -187,7 +204,40 @@ router.post('/:id/ai/enhance-bullets', authenticateToken, async (req: AuthReques
     const { bullets, role, company } = req.body;
 
     const enhanced = await openRouterService.enhanceExperienceBullets(bullets, role, company);
-    res.json({ enhanced });
+
+    // Save enhanced bullets to DB
+    let enhancedBulletsId = null;
+    try {
+      const saved = await prisma.enhancedBullets.create({
+        data: {
+          userId: req.userId!,
+          resumeId: req.params.id,
+          role,
+          company,
+          originalBullets: bullets || [],
+          enhancedBullets: enhanced || []
+        }
+      });
+      enhancedBulletsId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (enhanced bullets):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_enhance_bullets',
+          entityType: 'resume',
+          entityId: enhancedBulletsId || undefined,
+          metadata: { role, company, bulletCount: bullets?.length }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
+    res.json({ enhanced, enhancedBulletsId });
   } catch (error) {
     console.error('AI enhance bullets error:', error);
     res.status(500).json({ error: 'Failed to enhance bullets' });

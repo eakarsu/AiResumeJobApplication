@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { networkAPI, aiAPI } from '../services/api';
 import { NetworkContact } from '../types';
-import { ArrowLeft, Save, Mail, Phone, Linkedin, Building2, Sparkles, Loader2, Plus, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Save, Mail, Phone, Linkedin, Building2, Sparkles, Loader2, Plus, Calendar, MessageSquare, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const ContactDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [contact, setContact] = useState<NetworkContact | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +33,17 @@ const ContactDetail: React.FC = () => {
       console.error('Failed to fetch contact:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    try {
+      await networkAPI.delete(id!);
+      addToast('success', 'Contact deleted successfully');
+      navigate('/network');
+    } catch (error) {
+      addToast('error', 'Failed to delete contact');
     }
   };
 
@@ -107,6 +120,9 @@ const ContactDetail: React.FC = () => {
           </button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center space-x-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save</span>
+          </button>
+          <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+            <Trash2 className="w-4 h-4" /><span>Delete</span>
           </button>
         </div>
       </div>

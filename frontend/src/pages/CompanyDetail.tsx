@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { companiesAPI } from '../services/api';
 import { CompanyResearch } from '../types';
-import { ArrowLeft, Building2, Star, MapPin, Globe, Linkedin, Users, Calendar, Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, Building2, Star, MapPin, Globe, Linkedin, Users, Calendar, Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const CompanyDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [company, setCompany] = useState<CompanyResearch | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,6 +24,17 @@ const CompanyDetail: React.FC = () => {
       console.error('Failed to fetch company:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this company?')) return;
+    try {
+      await companiesAPI.delete(id!);
+      addToast('success', 'Company deleted successfully');
+      navigate('/companies');
+    } catch (error) {
+      addToast('error', 'Failed to delete company');
     }
   };
 
@@ -45,9 +58,14 @@ const CompanyDetail: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/companies')} className="flex items-center text-gray-600 hover:text-gray-900">
-        <ArrowLeft className="w-5 h-5 mr-2" />Back to Companies
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/companies')} className="flex items-center text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="w-5 h-5 mr-2" />Back to Companies
+        </button>
+        <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+          <Trash2 className="w-4 h-4" /><span>Delete</span>
+        </button>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

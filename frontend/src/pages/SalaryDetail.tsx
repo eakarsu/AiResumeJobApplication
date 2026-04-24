@@ -2,17 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { salaryAPI } from '../services/api';
 import { SalaryResearch } from '../types';
-import { ArrowLeft, DollarSign, MapPin, Briefcase, TrendingUp } from 'lucide-react';
+import { ArrowLeft, DollarSign, MapPin, Briefcase, TrendingUp, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const SalaryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [salary, setSalary] = useState<SalaryResearch | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchSalary();
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this salary data?')) return;
+    try {
+      await salaryAPI.delete(id!);
+      addToast('success', 'Salary data deleted successfully');
+      navigate('/salary');
+    } catch (error) {
+      addToast('error', 'Failed to delete salary data');
+    }
+  };
 
   const fetchSalary = async () => {
     try {
@@ -37,9 +50,14 @@ const SalaryDetail: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/salary')} className="flex items-center text-gray-600 hover:text-gray-900">
-        <ArrowLeft className="w-5 h-5 mr-2" />Back to Salary Research
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/salary')} className="flex items-center text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="w-5 h-5 mr-2" />Back to Salary Research
+        </button>
+        <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+          <Trash2 className="w-4 h-4" /><span>Delete</span>
+        </button>
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-start space-x-4 mb-6">

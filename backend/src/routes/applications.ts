@@ -45,6 +45,44 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Bulk delete applications
+router.delete('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await prisma.jobApplication.deleteMany({
+      where: { id: { in: ids }, userId: req.userId }
+    });
+    res.json({ deleted: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete items' });
+  }
+});
+
+// Bulk update application status
+router.patch('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids, status } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    if (!status) {
+      return res.status(400).json({ error: 'status is required' });
+    }
+    const result = await prisma.jobApplication.updateMany({
+      where: { id: { in: ids }, userId: req.userId },
+      data: { status }
+    });
+    res.json({ updated: result.count });
+  } catch (error) {
+    console.error('Bulk update error:', error);
+    res.status(500).json({ error: 'Failed to update items' });
+  }
+});
+
 // Get single application
 router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

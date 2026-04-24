@@ -18,9 +18,14 @@ import {
   CheckCircle,
   XCircle,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Target,
+  Search,
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { DashboardStats, JobApplication, Interview, Job } from '../types';
+import { SkeletonDashboard } from '../components/Skeleton';
 
 const featureCards = [
   { name: 'Resumes', icon: FileText, href: '/resumes', color: 'bg-blue-500', description: 'Create AI-powered resumes' },
@@ -28,12 +33,19 @@ const featureCards = [
   { name: 'Jobs', icon: Briefcase, href: '/jobs', color: 'bg-green-500', description: 'Browse job listings' },
   { name: 'Applications', icon: ClipboardList, href: '/applications', color: 'bg-orange-500', description: 'Track applications' },
   { name: 'Interviews', icon: Calendar, href: '/interviews', color: 'bg-pink-500', description: 'Manage interviews' },
-  { name: 'Interview Prep', icon: Sparkles, href: '/interview-prep', color: 'bg-indigo-500', description: 'AI interview coaching' },
   { name: 'Skills', icon: Award, href: '/skills', color: 'bg-yellow-500', description: 'Assess your skills' },
   { name: 'Salary', icon: DollarSign, href: '/salary', color: 'bg-emerald-500', description: 'Research salaries' },
   { name: 'Companies', icon: Building2, href: '/companies', color: 'bg-cyan-500', description: 'Research companies' },
   { name: 'Network', icon: Users, href: '/network', color: 'bg-rose-500', description: 'Manage contacts' },
   { name: 'Analytics', icon: BarChart3, href: '/analytics', color: 'bg-violet-500', description: 'View insights' },
+];
+
+const aiFeatureCards = [
+  { name: 'AI Job Matcher', icon: Target, href: '/ai-job-matcher', color: 'bg-gradient-to-r from-blue-500 to-indigo-500', description: 'Match your resume to jobs' },
+  { name: 'AI Keyword Optimizer', icon: Search, href: '/ai-keyword-optimizer', color: 'bg-gradient-to-r from-purple-500 to-pink-500', description: 'Optimize for ATS systems' },
+  { name: 'AI Cover Letter', icon: Mail, href: '/ai-cover-letter', color: 'bg-gradient-to-r from-indigo-500 to-purple-500', description: 'Personalized cover letters' },
+  { name: 'AI Interview Prep', icon: MessageSquare, href: '/interview-prep', color: 'bg-gradient-to-r from-pink-500 to-rose-500', description: 'Practice with AI coach' },
+  { name: 'AI Salary Negotiator', icon: DollarSign, href: '/ai-salary-negotiator', color: 'bg-gradient-to-r from-emerald-500 to-teal-500', description: 'Get negotiation insights' },
 ];
 
 const Dashboard: React.FC = () => {
@@ -83,11 +95,7 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   return (
@@ -118,10 +126,33 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* AI Features Section */}
+      <div>
+        <div className="flex items-center mb-4">
+          <Sparkles className="w-5 h-5 text-primary-600 mr-2" />
+          <h2 className="text-lg font-semibold text-gray-900">AI-Powered Features</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {aiFeatureCards.map((card) => (
+            <Link
+              key={card.name}
+              to={card.href}
+              className="bg-white rounded-xl p-4 card-hover border border-gray-100 group"
+            >
+              <div className={`w-12 h-12 ${card.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                <card.icon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="font-medium text-gray-900">{card.name}</h3>
+              <p className="text-xs text-gray-500 mt-1">{card.description}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Feature Cards */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {featureCards.map((card) => (
             <Link
               key={card.name}

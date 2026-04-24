@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { jobsAPI } from '../services/api';
 import { Job } from '../types';
 import { Briefcase, MapPin, DollarSign, Building2, Search, Filter, Bookmark, BookmarkCheck } from 'lucide-react';
+import { SkeletonCardGrid } from '../components/Skeleton';
 
 const Jobs: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -127,9 +128,7 @@ const Jobs: React.FC = () => {
 
       {/* Results */}
       {loading ? (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </div>
+        <SkeletonCardGrid count={6} />
       ) : jobs.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-300" />

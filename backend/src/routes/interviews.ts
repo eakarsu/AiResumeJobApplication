@@ -35,6 +35,23 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Bulk delete interviews
+router.delete('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await prisma.interview.deleteMany({
+      where: { id: { in: ids }, userId: req.userId }
+    });
+    res.json({ deleted: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete items' });
+  }
+});
+
 // Get single interview
 router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -242,7 +259,41 @@ router.post('/ai/evaluate-answer', authenticateToken, async (req: AuthRequest, r
     const { question, answer, context } = req.body;
 
     const evaluation = await openRouterService.evaluateInterviewAnswer(question, answer, context);
-    res.json(evaluation);
+
+    // Save evaluation to DB
+    let evaluationId = null;
+    try {
+      const saved = await prisma.interviewEvaluation.create({
+        data: {
+          userId: req.userId!,
+          question,
+          answer,
+          context: context || null,
+          score: evaluation.score,
+          feedback: evaluation.feedback,
+          improvements: evaluation.improvements || []
+        }
+      });
+      evaluationId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (interview evaluation):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_interview_evaluate',
+          entityType: 'interview',
+          entityId: evaluationId || undefined,
+          metadata: { score: evaluation.score }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
+    res.json({ ...evaluation, evaluationId });
   } catch (error) {
     console.error('AI evaluate answer error:', error);
     res.status(500).json({ error: 'Failed to evaluate answer' });
@@ -285,7 +336,42 @@ router.post('/ai/generate-questions', authenticateToken, async (req: AuthRequest
       count
     });
 
-    res.json(questions);
+    // Save questions to DB
+    let questionIds: string[] = [];
+    try {
+      const savedQuestions = await Promise.all(
+        questions.map(q =>
+          prisma.interviewPrepQuestion.create({
+            data: {
+              question: q.question,
+              suggestedAnswer: q.suggestedAnswer,
+              tips: q.tips,
+              category: q.category || interviewType || 'general',
+              difficulty: q.difficulty || 'medium',
+              isAiGenerated: true
+            }
+          })
+        )
+      );
+      questionIds = savedQuestions.map(q => q.id);
+    } catch (e) {
+      console.error('DB save failed (interview questions):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_interview_questions',
+          entityType: 'interview',
+          metadata: { jobTitle, interviewType, questionCount: questions.length }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
+    res.json({ questions, questionIds });
   } catch (error) {
     console.error('AI generate questions error:', error);
     res.status(500).json({ error: 'Failed to generate questions' });

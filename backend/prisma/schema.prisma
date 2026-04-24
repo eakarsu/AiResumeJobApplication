@@ -21,6 +21,9 @@ model User {
   avatarUrl     String?
   isPremium     Boolean   @default(false)
   premiumTier   String?   // "basic", "pro", "enterprise"
+  role          String    @default("user") // "user", "admin", "premium"
+  isEmailVerified       Boolean   @default(false)
+  emailVerificationToken String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -33,7 +36,22 @@ model User {
   networkContacts   NetworkContact[]
   activityLogs      ActivityLog[]
   salaryResearches  SalaryResearch[]
-  companyResearches CompanyResearch[]
+  companyResearches    CompanyResearch[]
+  skillsGapAnalyses    SkillsGapAnalysis[]
+  enhancedBullets      EnhancedBullets[]
+  interviewEvaluations InterviewEvaluation[]
+  generatedMessages    GeneratedMessage[]
+  passwordResetTokens  PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 // Resume Management
@@ -258,6 +276,21 @@ model UserSkill {
   @@unique([userId, skillId])
 }
 
+// Skills Gap Analysis (AI-generated)
+model SkillsGapAnalysis {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetRole      String
+  industry        String?
+  currentSkills   String[]
+  missingSkills   String[]
+  learningPath    String[]
+  resources       String[]
+  timeline        String?
+  createdAt       DateTime  @default(now())
+}
+
 // Salary Research
 model SalaryResearch {
   id              String    @id @default(uuid())
@@ -342,6 +375,50 @@ model ContactInteraction {
   notes       String?   @db.Text
   outcome     String?
   createdAt   DateTime  @default(now())
+}
+
+// Enhanced Bullets (AI-generated)
+model EnhancedBullets {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId        String?
+  role            String
+  company         String
+  originalBullets String[]
+  enhancedBullets String[]
+  createdAt       DateTime  @default(now())
+}
+
+// Interview Answer Evaluation (AI-generated)
+model InterviewEvaluation {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question        String    @db.Text
+  answer          String    @db.Text
+  context         String?
+  score           Int       // 1-10
+  feedback        String    @db.Text
+  improvements    String[]
+  createdAt       DateTime  @default(now())
+}
+
+// Generated Messages (networking messages & follow-up emails)
+model GeneratedMessage {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageType     String    // "networking" or "follow_up_email"
+  content         String    @db.Text
+  recipientInfo   String?
+  recipientName   String?
+  recipientRole   String?
+  purpose         String?
+  platform        String?
+  tone            String?
+  context         String?   @db.Text
+  createdAt       DateTime  @default(now())
 }
 
 // Activity Logging

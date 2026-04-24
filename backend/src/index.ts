@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -19,17 +20,20 @@ import networkRoutes from './routes/network';
 import analyticsRoutes from './routes/analytics';
 import aiRoutes from './routes/ai';
 import templateRoutes from './routes/templates';
+import { generalLimiter, authLimiter, aiLimiter } from './middleware/rateLimiter';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
+app.use(helmet());
 app.use(cors());
+app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/cover-letters', coverLetterRoutes);
 app.use('/api/jobs', jobRoutes);
@@ -40,7 +44,7 @@ app.use('/api/salary', salaryRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', aiLimiter, aiRoutes);
 app.use('/api/templates', templateRoutes);
 
 // Health check

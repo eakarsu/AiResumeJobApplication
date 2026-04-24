@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { networkAPI } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { NetworkContact } from '../types';
-import { Plus, Users, Search, Mail, Phone, Linkedin, Building2, Trash2 } from 'lucide-react';
+import { Plus, Users, Search, Mail, Phone, Linkedin } from 'lucide-react';
+import DataTable, { Column } from '../components/DataTable';
+import ExportButtons from '../components/ExportButtons';
+import BulkActionBar from '../components/BulkActionBar';
+import { useTableSort } from '../hooks/useTableSort';
+import { useSelection } from '../hooks/useSelection';
+import { SkeletonTable } from '../components/Skeleton';
 
 const Network: React.FC = () => {
   const [contacts, setContacts] = useState<NetworkContact[]>([]);
@@ -13,10 +20,9 @@ const Network: React.FC = () => {
     firstName: '', lastName: '', email: '', phone: '', company: '', position: '', relationship: 'colleague', linkedinUrl: ''
   });
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
-  useEffect(() => {
-    fetchContacts();
-  }, [search]);
+  useEffect(() => { fetchContacts(); }, [search]);
 
   const fetchContacts = async () => {
     try {
@@ -29,42 +35,79 @@ const Network: React.FC = () => {
     }
   };
 
+  const { sort, toggleSort, sortedData } = useTableSort(contacts, 'lastName');
+  const { selectedIds, toggle, toggleAll, clearSelection, allSelected, selectedCount } = useSelection(sortedData);
+
   const handleCreate = async () => {
     if (!formData.firstName || !formData.lastName) return;
     try {
       const response = await networkAPI.create(formData);
       setShowModal(false);
       setFormData({ firstName: '', lastName: '', email: '', phone: '', company: '', position: '', relationship: 'colleague', linkedinUrl: '' });
+      addToast('success', 'Contact added');
       navigate(`/network/${response.data.id}`);
     } catch (error) {
-      console.error('Failed to create contact:', error);
+      addToast('error', 'Failed to create contact');
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Delete this contact?')) return;
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedCount} contact(s)?`)) return;
     try {
-      await networkAPI.delete(id);
-      setContacts(contacts.filter(c => c.id !== id));
+      await networkAPI.bulkDelete(Array.from(selectedIds));
+      setContacts(contacts.filter(c => !selectedIds.has(c.id)));
+      clearSelection();
+      addToast('success', `Deleted ${selectedCount} contact(s)`);
     } catch (error) {
-      console.error('Failed to delete:', error);
+      addToast('error', 'Failed to delete contacts');
     }
   };
 
   const getRelationshipColor = (rel?: string) => {
     const colors: Record<string, string> = {
-      colleague: 'bg-blue-100 text-blue-700',
-      recruiter: 'bg-purple-100 text-purple-700',
-      mentor: 'bg-green-100 text-green-700',
-      friend: 'bg-yellow-100 text-yellow-700'
+      colleague: 'bg-blue-100 text-blue-700', recruiter: 'bg-purple-100 text-purple-700',
+      mentor: 'bg-green-100 text-green-700', friend: 'bg-yellow-100 text-yellow-700'
     };
     return colors[rel || ''] || 'bg-gray-100 text-gray-700';
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>;
-  }
+  const columns: Column<NetworkContact>[] = [
+    {
+      key: 'lastName', label: 'Name', sortable: true,
+      render: (c) => (
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+            <span className="text-primary-700 font-medium text-xs">{c.firstName[0]}{c.lastName[0]}</span>
+          </div>
+          <span className="font-medium text-gray-900">{c.firstName} {c.lastName}</span>
+        </div>
+      )
+    },
+    { key: 'company', label: 'Company', sortable: true, render: (c) => <span className="text-gray-600">{c.company || '-'}</span> },
+    { key: 'position', label: 'Position', sortable: true, render: (c) => <span className="text-gray-600">{c.position || '-'}</span> },
+    {
+      key: 'relationship', label: 'Relationship', sortable: true,
+      render: (c) => c.relationship ? <span className={`px-2 py-0.5 rounded-full text-xs ${getRelationshipColor(c.relationship)}`}>{c.relationship}</span> : <span className="text-gray-400">-</span>
+    },
+    {
+      key: 'email', label: 'Contact', sortable: false,
+      render: (c) => (
+        <div className="flex items-center space-x-2">
+          {c.email && <Mail className="w-4 h-4 text-gray-400" />}
+          {c.phone && <Phone className="w-4 h-4 text-gray-400" />}
+          {c.linkedinUrl && <Linkedin className="w-4 h-4 text-gray-400" />}
+        </div>
+      )
+    },
+  ];
+
+  const exportColumns = [
+    { key: 'firstName', label: 'First Name' }, { key: 'lastName', label: 'Last Name' },
+    { key: 'email', label: 'Email' }, { key: 'company', label: 'Company' },
+    { key: 'position', label: 'Position' }, { key: 'relationship', label: 'Relationship' },
+  ];
+
+  if (loading) return <SkeletonTable rows={6} cols={5} />;
 
   return (
     <div className="space-y-6">
@@ -73,32 +116,24 @@ const Network: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Network</h1>
           <p className="text-gray-500">Manage your professional contacts</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center space-x-2">
-          <Plus className="w-5 h-5" /><span>Add Contact</span>
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search contacts..."
-              className="input-with-icon"
-            />
-          </div>
-          <button onClick={() => fetchContacts()} className="btn-primary px-6 flex items-center gap-2 whitespace-nowrap">
-            <Search className="w-4 h-4" />
-            <span>Search</span>
+        <div className="flex items-center space-x-3">
+          <ExportButtons data={sortedData} columns={exportColumns} filename="contacts" />
+          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center space-x-2">
+            <Plus className="w-5 h-5" /><span>Add Contact</span>
           </button>
         </div>
       </div>
 
-      {/* Contacts Grid */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search contacts..." className="input-with-icon" />
+          </div>
+          <button onClick={() => fetchContacts()} className="btn-primary px-6 flex items-center gap-2"><Search className="w-4 h-4" /><span>Search</span></button>
+        </div>
+      </div>
+
       {contacts.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -107,46 +142,13 @@ const Network: React.FC = () => {
           <button onClick={() => setShowModal(true)} className="btn-primary">Add Contact</button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {contacts.map((contact) => (
-            <div key={contact.id} onClick={() => navigate(`/network/${contact.id}`)} className="bg-white rounded-xl border border-gray-200 p-5 card-hover">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span className="text-primary-700 font-semibold">{contact.firstName[0]}{contact.lastName[0]}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {contact.relationship && (
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${getRelationshipColor(contact.relationship)}`}>{contact.relationship}</span>
-                  )}
-                  <button onClick={(e) => handleDelete(contact.id, e)} className="p-1 text-gray-400 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <h3 className="font-semibold text-gray-900">{contact.firstName} {contact.lastName}</h3>
-              {(contact.position || contact.company) && (
-                <p className="text-sm text-gray-500">
-                  {contact.position}{contact.position && contact.company && ' at '}{contact.company}
-                </p>
-              )}
-              <div className="flex items-center space-x-3 mt-3">
-                {contact.email && <Mail className="w-4 h-4 text-gray-400" />}
-                {contact.phone && <Phone className="w-4 h-4 text-gray-400" />}
-                {contact.linkedinUrl && <Linkedin className="w-4 h-4 text-gray-400" />}
-              </div>
-              {contact.tags && contact.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {contact.tags.slice(0, 3).map((tag, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{tag}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <DataTable data={sortedData} columns={columns} sort={sort} onSort={toggleSort}
+          selectable selectedIds={selectedIds} onToggle={toggle} onToggleAll={toggleAll} allSelected={allSelected}
+          onRowClick={(c) => navigate(`/network/${c.id}`)} getRowId={(c) => c.id} />
       )}
 
-      {/* Add Modal */}
+      <BulkActionBar selectedCount={selectedCount} onDelete={handleBulkDelete} onClear={clearSelection} />
+
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
@@ -161,11 +163,8 @@ const Network: React.FC = () => {
               <input type="text" placeholder="Company" value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="input-field" />
               <input type="text" placeholder="Position" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} className="input-field" />
               <select value={formData.relationship} onChange={(e) => setFormData({ ...formData, relationship: e.target.value })} className="input-field">
-                <option value="colleague">Colleague</option>
-                <option value="recruiter">Recruiter</option>
-                <option value="mentor">Mentor</option>
-                <option value="friend">Friend</option>
-                <option value="other">Other</option>
+                <option value="colleague">Colleague</option><option value="recruiter">Recruiter</option>
+                <option value="mentor">Mentor</option><option value="friend">Friend</option><option value="other">Other</option>
               </select>
               <input type="url" placeholder="LinkedIn URL" value={formData.linkedinUrl} onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })} className="input-field" />
             </div>

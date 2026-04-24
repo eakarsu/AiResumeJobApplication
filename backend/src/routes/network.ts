@@ -54,6 +54,23 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Bulk delete contacts
+router.delete('/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await prisma.networkContact.deleteMany({
+      where: { id: { in: ids }, userId: req.userId }
+    });
+    res.json({ deleted: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete items' });
+  }
+});
+
 // Get single contact
 router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -265,7 +282,39 @@ router.post('/ai/message', authenticateToken, async (req: AuthRequest, res: Resp
       platform
     });
 
-    res.json({ message });
+    // Save networking message to DB
+    let messageId = null;
+    try {
+      const saved = await prisma.generatedMessage.create({
+        data: {
+          userId: req.userId!,
+          messageType: 'networking',
+          content: message,
+          recipientInfo: recipientInfo || null,
+          purpose: purpose || null,
+          platform: platform || 'LinkedIn'
+        }
+      });
+      messageId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (networking message):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_networking_message',
+          entityType: 'network',
+          entityId: messageId || undefined,
+          metadata: { purpose, platform }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
+    res.json({ message, messageId });
   } catch (error) {
     console.error('AI networking message error:', error);
     res.status(500).json({ error: 'Failed to generate networking message' });
@@ -296,7 +345,40 @@ router.post('/ai/follow-up', authenticateToken, async (req: AuthRequest, res: Re
       tone
     });
 
-    res.json({ email });
+    // Save follow-up email to DB
+    let emailId = null;
+    try {
+      const saved = await prisma.generatedMessage.create({
+        data: {
+          userId: req.userId!,
+          messageType: 'follow_up_email',
+          content: email,
+          recipientName: recipientName || null,
+          recipientRole: recipientRole || null,
+          tone: tone || 'professional',
+          context: context || null
+        }
+      });
+      emailId = saved.id;
+    } catch (e) {
+      console.error('DB save failed (follow-up email):', e);
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_follow_up_email',
+          entityType: 'network',
+          entityId: emailId || undefined,
+          metadata: { recipientName, recipientRole, tone }
+        }
+      });
+    } catch (e) {
+      console.error('DB save failed (activity log):', e);
+    }
+
+    res.json({ email, emailId });
   } catch (error) {
     console.error('AI follow-up email error:', error);
     res.status(500).json({ error: 'Failed to generate follow-up email' });

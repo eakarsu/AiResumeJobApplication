@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { interviewsAPI } from '../services/api';
 import { Interview } from '../types';
-import { ArrowLeft, Save, Sparkles, Loader2, Calendar, Clock, MapPin, Link as LinkIcon, User } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Loader2, Calendar, Clock, MapPin, Link as LinkIcon, User, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const InterviewDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [interview, setInterview] = useState<Interview | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +29,17 @@ const InterviewDetail: React.FC = () => {
       console.error('Failed to fetch interview:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this interview?')) return;
+    try {
+      await interviewsAPI.delete(id!);
+      addToast('success', 'Interview deleted successfully');
+      navigate('/interviews');
+    } catch (error) {
+      addToast('error', 'Failed to delete interview');
     }
   };
 
@@ -92,6 +105,9 @@ const InterviewDetail: React.FC = () => {
           <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center space-x-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>Save</span>
+          </button>
+          <button onClick={handleDelete} className="btn-danger flex items-center space-x-2">
+            <Trash2 className="w-4 h-4" /><span>Delete</span>
           </button>
         </div>
       </div>

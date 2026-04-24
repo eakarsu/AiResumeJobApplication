@@ -42,3 +42,36 @@ body {
 .status-rejected { @apply bg-red-100 text-red-800; }
 .status-accepted { @apply bg-emerald-100 text-emerald-800; }
 .status-withdrawn { @apply bg-gray-100 text-gray-800; }
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Print styles */
+@media print {
+  .print\\:hidden, nav, header, aside, .fixed {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .lg\\:ml-64 {
+    margin-left: 0 !important;
+  }
+}

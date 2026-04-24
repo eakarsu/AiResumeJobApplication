@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Sparkles, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -135,10 +136,11 @@ const Register: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="input-with-icon"
-                  placeholder="At least 6 characters"
+                  placeholder="At least 8 characters"
                   required
                 />
               </div>
+              <PasswordStrengthMeter password={formData.password} />
             </div>
 
             <div>
