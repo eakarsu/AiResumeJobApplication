@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import prisma from '../services/prisma';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { openRouterService } from '../services/openrouter';
+import { exportResumePdf, exportResumeTxt } from '../lib/resumeExport';
 
 const router = Router();
 
@@ -138,6 +139,95 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
   } catch (error) {
     console.error('Delete resume error:', error);
     res.status(500).json({ error: 'Failed to delete resume' });
+  }
+});
+
+// Export resume as PDF
+router.get('/:id/export/pdf', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const resume = await prisma.resume.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            location: true,
+            linkedinUrl: true,
+            portfolioUrl: true
+          }
+        }
+      }
+    });
+
+    if (!resume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    const pdfBuffer = await exportResumePdf({
+      ...resume,
+      experience: resume.experience as any[],
+      education: resume.education as any[],
+      certifications: resume.certifications as any[] | null,
+      languages: resume.languages as any[] | null,
+      projects: resume.projects as any[] | null,
+      user: resume.user
+    });
+
+    const filename = `${resume.title.replace(/[^a-z0-9]/gi, '_')}_resume.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.end(pdfBuffer);
+  } catch (error) {
+    console.error('PDF export error:', error);
+    res.status(500).json({ error: 'Failed to export PDF' });
+  }
+});
+
+// Export resume as plain text (ATS-friendly)
+router.get('/:id/export/txt', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const resume = await prisma.resume.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            location: true,
+            linkedinUrl: true,
+            portfolioUrl: true
+          }
+        }
+      }
+    });
+
+    if (!resume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    const text = exportResumeTxt({
+      ...resume,
+      experience: resume.experience as any[],
+      education: resume.education as any[],
+      certifications: resume.certifications as any[] | null,
+      languages: resume.languages as any[] | null,
+      projects: resume.projects as any[] | null,
+      user: resume.user
+    });
+
+    const filename = `${resume.title.replace(/[^a-z0-9]/gi, '_')}_resume.txt`;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(text);
+  } catch (error) {
+    console.error('TXT export error:', error);
+    res.status(500).json({ error: 'Failed to export TXT' });
   }
 });
 

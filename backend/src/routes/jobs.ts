@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import prisma from '../services/prisma';
 import { authenticateToken, optionalAuth, AuthRequest } from '../middleware/auth';
 import { openRouterService } from '../services/openrouter';
+import { ingestJobs } from '../services/jobIngestion';
 
 const router = Router();
 
@@ -240,6 +241,31 @@ router.get('/user/recommended', authenticateToken, async (req: AuthRequest, res:
   } catch (error) {
     console.error('Get recommended jobs error:', error);
     res.status(500).json({ error: 'Failed to get recommended jobs' });
+  }
+});
+
+// Ingest jobs from Adzuna (admin / internal use)
+router.post('/ingest', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { query, location, pages } = req.body;
+
+    if (!query || !location) {
+      return res.status(400).json({ error: 'query and location are required' });
+    }
+
+    const result = await ingestJobs(
+      query as string,
+      location as string,
+      typeof pages === 'number' ? pages : 1
+    );
+
+    res.json({
+      message: `Job ingestion complete`,
+      ...result
+    });
+  } catch (error: any) {
+    console.error('Job ingestion error:', error);
+    res.status(500).json({ error: error?.message || 'Failed to ingest jobs' });
   }
 });
 

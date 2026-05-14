@@ -10,6 +10,7 @@ import {
   resetPasswordValidation,
   changePasswordValidation,
 } from '../middleware/validate';
+import { sendPasswordReset, sendEmailVerification } from '../lib/email';
 
 const router = Router();
 
@@ -53,8 +54,10 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
 
     const token = generateToken(user.id);
 
-    // Log verification link to console (replace with email service in production)
-    console.log(`[Email Verification] http://localhost:5173/verify-email?token=${emailVerificationToken}`);
+    // Send verification email (falls back to console log if RESEND_API_KEY not set)
+    sendEmailVerification(user.email, emailVerificationToken).catch(err =>
+      console.error('Verification email send failed:', err)
+    );
 
     // Log activity
     await prisma.activityLog.create({
@@ -254,8 +257,10 @@ router.post('/forgot-password', forgotPasswordValidation, async (req: Request, r
       }
     });
 
-    // Log reset link to console (replace with email service in production)
-    console.log(`[Password Reset] http://localhost:5173/reset-password?token=${token}`);
+    // Send password reset email (falls back to console log if RESEND_API_KEY not set)
+    sendPasswordReset(user.email, token).catch(err =>
+      console.error('Password reset email send failed:', err)
+    );
 
     res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
   } catch (error) {
@@ -351,7 +356,9 @@ router.post('/resend-verification', authenticateToken, async (req: AuthRequest, 
       data: { emailVerificationToken: newToken }
     });
 
-    console.log(`[Email Verification] http://localhost:5173/verify-email?token=${newToken}`);
+    sendEmailVerification(user.email, newToken).catch(err =>
+      console.error('Resend verification email failed:', err)
+    );
 
     res.json({ message: 'Verification email sent' });
   } catch (error) {

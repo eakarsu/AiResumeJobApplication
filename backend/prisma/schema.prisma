@@ -448,6 +448,88 @@ model ResumeTemplate {
   updatedAt   DateTime  @updatedAt
 }
 
+// ────── NEW: Resume parsed from uploaded PDF/DOCX
+model ParsedResumeUpload {
+  id             String   @id @default(uuid())
+  userId         String
+  originalName   String
+  mimeType       String
+  size           Int
+  rawText        String   @db.Text
+  parsedJson     Json     // structured AI output
+  resumeId       String?  // link to created/updated Resume row
+  aiResults      Json?    // raw model output for traceability
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ────── NEW: Application Autopilot — daily searches + auto-drafted apps
+model AutopilotConfig {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  enabled         Boolean  @default(false)
+  query           String   // search query (e.g. "Senior Python Engineer")
+  location        String
+  minSalary       Int?
+  experienceLevel String?
+  resumeId        String?
+  maxPerDay       Int      @default(5)
+  lastRunAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AutopilotDraft {
+  id              String   @id @default(uuid())
+  userId          String
+  jobId           String
+  matchScore      Int
+  resumeId        String?
+  coverLetterId   String?
+  bulletEdits     Json?
+  status          String   @default("pending_review") // pending_review, approved, dismissed, applied
+  aiResults       Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, jobId])
+  @@index([userId, status])
+}
+
+// ────── NEW: LinkedIn-style profile sync
+model LinkedinProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  url          String
+  rawSnippet   String   @db.Text
+  parsedJson   Json
+  gapInsights  Json?
+  aiResults    Json?
+  syncedAt     DateTime @default(now())
+}
+
+// ────── NEW: Compensation tracker — anonymous offer dataset
+model CompensationOffer {
+  id              String   @id @default(uuid())
+  userId          String?  // optional — submission can be anonymous
+  jobTitle        String
+  company         String
+  location        String
+  experienceYears Float?
+  baseSalary      Int
+  bonus           Int?
+  equity          String?
+  signOnBonus     Int?
+  totalComp       Int?
+  notes           String?  @db.Text
+  isAnonymous     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([jobTitle])
+  @@index([location])
+}
+
 // Subscription Plans
 model SubscriptionPlan {
   id              String    @id @default(uuid())

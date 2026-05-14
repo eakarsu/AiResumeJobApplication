@@ -32,6 +32,38 @@ import AIJobMatcher from './pages/AIJobMatcher';
 import AIKeywordOptimizer from './pages/AIKeywordOptimizer';
 import AICoverLetterPersonalizer from './pages/AICoverLetterPersonalizer';
 import AISalaryNegotiator from './pages/AISalaryNegotiator';
+import ResumeUpload from './pages/ResumeUpload';
+import Autopilot from './pages/Autopilot';
+import LinkedinSync from './pages/LinkedinSync';
+import CompensationTracker from './pages/CompensationTracker';
+import VoiceInterviewPrep from './pages/VoiceInterviewPrep';
+import AIRejectionAnalysis from './pages/AIRejectionAnalysis';
+import AIOfferNegotiationSimulator from './pages/AIOfferNegotiationSimulator';
+import AICareerTrajectoryAnalyzer from './pages/AICareerTrajectoryAnalyzer';
+import AIApplicationTracker from './pages/AIApplicationTracker';
+import AIInterviewSchedulingOptimizer from './pages/AIInterviewSchedulingOptimizer';
+
+// === Batch 07 Gaps & Frontend Mounts ===
+import CfAgenticApplicationSuite from './pages/CfAgenticApplicationSuite';
+import CfInterviewCoachingWithRecording from './pages/CfInterviewCoachingWithRecording';
+import CfOfferNegotiationCoach from './pages/CfOfferNegotiationCoach';
+import CfCareerGoalRoadmap from './pages/CfCareerGoalRoadmap';
+import CfCompanyCultureFitAssessment from './pages/CfCompanyCultureFitAssessment';
+import CfRecruiterRelationshipBuilder from './pages/CfRecruiterRelationshipBuilder';
+import GapNoRejectionanalysisWhyRejected from './pages/GapNoRejectionanalysisWhyRejected';
+import GapNoInterviewschedulingoptimizer from './pages/GapNoInterviewschedulingoptimizer';
+import GapNoOffernegotiationsimulator from './pages/GapNoOffernegotiationsimulator';
+import GapNoCareertrajectoryanalyzerPathPrediction from './pages/GapNoCareertrajectoryanalyzerPathPrediction';
+import GapNoVideorecordingAnalysisEyeContactPace from './pages/GapNoVideorecordingAnalysisEyeContactPace';
+import GapLimitedLinkedinIntegrationStubOnlyNoRe from './pages/GapLimitedLinkedinIntegrationStubOnlyNoRe';
+import GapNoInterviewPanelFeedbackCollection from './pages/GapNoInterviewPanelFeedbackCollection';
+import GapNoOfferComparisonToolBenefitsEquity from './pages/GapNoOfferComparisonToolBenefitsEquity';
+import GapNoBackgroundCheckStatusTracker from './pages/GapNoBackgroundCheckStatusTracker';
+import GapNoBrowserExtensionForOneclickApply from './pages/GapNoBrowserExtensionForOneclickApply';
+import GapNoNotificationsemailAutomation from './pages/GapNoNotificationsemailAutomation';
+import GapNoPublicWebhooks from './pages/GapNoPublicWebhooks';
+// === End Batch 07 ===
+
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
@@ -90,7 +122,38 @@ function App() {
         <Route path="network/:id" element={<ContactDetail />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="profile" element={<Profile />} />
+        {/* NEW pages */}
+        <Route path="resume-upload" element={<ResumeUpload />} />
+        <Route path="autopilot" element={<Autopilot />} />
+        <Route path="linkedin-sync" element={<LinkedinSync />} />
+        <Route path="compensation" element={<CompensationTracker />} />
+        <Route path="voice-prep" element={<VoiceInterviewPrep />} />
+        <Route path="ai-rejection-analysis" element={<AIRejectionAnalysis />} />
+        <Route path="ai-offer-negotiation" element={<AIOfferNegotiationSimulator />} />
+        <Route path="ai-career-trajectory" element={<AICareerTrajectoryAnalyzer />} />
+        <Route path="ai-application-tracker" element={<AIApplicationTracker />} />
+        <Route path="ai-interview-scheduling" element={<AIInterviewSchedulingOptimizer />} />
       </Route>
+          // === Batch 07 Gaps & Frontend Mounts ===
+          <Route path='/cf-agentic-application-suite' element={<CfAgenticApplicationSuite />} />
+          <Route path='/cf-interview-coaching-with-recording' element={<CfInterviewCoachingWithRecording />} />
+          <Route path='/cf-offer-negotiation-coach' element={<CfOfferNegotiationCoach />} />
+          <Route path='/cf-career-goal-roadmap' element={<CfCareerGoalRoadmap />} />
+          <Route path='/cf-company-culture-fit-assessment' element={<CfCompanyCultureFitAssessment />} />
+          <Route path='/cf-recruiter-relationship-builder' element={<CfRecruiterRelationshipBuilder />} />
+          <Route path='/gap-no-rejectionanalysis-why-rejected' element={<GapNoRejectionanalysisWhyRejected />} />
+          <Route path='/gap-no-interviewschedulingoptimizer' element={<GapNoInterviewschedulingoptimizer />} />
+          <Route path='/gap-no-offernegotiationsimulator' element={<GapNoOffernegotiationsimulator />} />
+          <Route path='/gap-no-careertrajectoryanalyzer-path-prediction' element={<GapNoCareertrajectoryanalyzerPathPrediction />} />
+          <Route path='/gap-no-videorecording-analysis-eye-contact-pace' element={<GapNoVideorecordingAnalysisEyeContactPace />} />
+          <Route path='/gap-limited-linkedin-integration-stub-only-no-re' element={<GapLimitedLinkedinIntegrationStubOnlyNoRe />} />
+          <Route path='/gap-no-interview-panel-feedback-collection' element={<GapNoInterviewPanelFeedbackCollection />} />
+          <Route path='/gap-no-offer-comparison-tool-benefits-equity' element={<GapNoOfferComparisonToolBenefitsEquity />} />
+          <Route path='/gap-no-background-check-status-tracker' element={<GapNoBackgroundCheckStatusTracker />} />
+          <Route path='/gap-no-browser-extension-for-oneclick-apply' element={<GapNoBrowserExtensionForOneclickApply />} />
+          <Route path='/gap-no-notificationsemail-automation' element={<GapNoNotificationsemailAutomation />} />
+          <Route path='/gap-no-public-webhooks' element={<GapNoPublicWebhooks />} />
+          // === End Batch 07 ===
     </Routes>
   );
 }

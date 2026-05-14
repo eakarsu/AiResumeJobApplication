@@ -48,6 +48,13 @@ const aiNavigation = [
   { name: 'Cover Letter AI', href: '/ai-cover-letter', icon: Mail },
   { name: 'Interview Prep', href: '/interview-prep', icon: MessageSquare },
   { name: 'Salary Negotiator', href: '/ai-salary-negotiator', icon: DollarSign },
+  { name: 'Resume Upload (PDF/DOCX)', href: '/resume-upload', icon: FileText },
+  { name: 'Application Autopilot', href: '/autopilot', icon: Briefcase },
+  { name: 'LinkedIn Sync', href: '/linkedin-sync', icon: Users },
+  { name: 'Compensation Tracker', href: '/compensation', icon: DollarSign },
+  { name: 'Voice Interview Prep', href: '/voice-prep', icon: MessageSquare },
+  { name: 'Application Tracker', href: '/ai-application-tracker', icon: ClipboardList },
+  { name: 'Interview Scheduling', href: '/ai-interview-scheduling', icon: Calendar },
 ];
 
 const Layout: React.FC = () => {

@@ -55,6 +55,78 @@ export class OpenRouterService {
     }
   }
 
+  /**
+   * Stream chat tokens using OpenRouter's SSE streaming API.
+   * Calls `onToken(chunk)` for each token, resolves with the full text.
+   */
+  async chatStream(
+    messages: ChatMessage[],
+    onToken: (token: string) => void,
+    options?: { temperature?: number; maxTokens?: number }
+  ): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error('OpenRouter API key not configured.');
+    }
+
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'AI Resume Job Application'
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages,
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenRouter streaming error: ${response.status} - ${error}`);
+    }
+
+    if (!response.body) throw new Error('No response body for streaming request');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let fullText = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';   // keep incomplete last line for next chunk
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === '[DONE]') break;
+
+        try {
+          const parsed = JSON.parse(data);
+          const token: string = parsed?.choices?.[0]?.delta?.content ?? '';
+          if (token) {
+            onToken(token);
+            fullText += token;
+          }
+        } catch {
+          // malformed chunk — skip
+        }
+      }
+    }
+
+    return fullText;
+  }
+
   async chat(messages: ChatMessage[], options?: { temperature?: number; maxTokens?: number }): Promise<string> {
     if (!this.apiKey) {
       throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY in .env file.');
@@ -531,6 +603,61 @@ Return only the message text — no JSON, no subject line (unless email), no ext
       { role: 'system', content: 'You are a networking strategist who has helped professionals build meaningful connections. You write messages that feel genuine and personal — never templated or salesy. You understand that the best networking messages offer value before asking for anything.' },
       { role: 'user', content: prompt }
     ]);
+  }
+
+  // Tailor resume bullets + cover letter for a specific job in one shot
+  async tailorForJob(resume: any, job: any): Promise<{
+    tailoredBullets: Array<{ role: string; company: string; original: string[]; enhanced: string[] }>;
+    coverLetter: string;
+  }> {
+    const jobSkills: string[] = (job.skills || []).concat(job.requirements || []);
+
+    // ── Step 1: Tailor bullets per experience entry ────────────────────────────
+    const experience: any[] = Array.isArray(resume.experience) ? resume.experience : [];
+    const tailoredBullets: Array<{ role: string; company: string; original: string[]; enhanced: string[] }> = [];
+
+    for (const exp of experience) {
+      const bullets: string[] = exp.bullets || (exp.description ? [exp.description] : []);
+      if (bullets.length === 0) continue;
+
+      const prompt = `You are tailoring a resume for a "${job.title}" role at "${job.company}".
+
+Job required skills/keywords: ${jobSkills.slice(0, 20).join(', ')}
+
+Rewrite each bullet for this experience entry (${exp.title || ''} at ${exp.company || ''}) to:
+- Naturally incorporate relevant keywords from the job skills list above
+- Strengthen impact with metrics where possible
+- Keep each bullet under 150 characters
+
+Original bullets:
+${bullets.map((b: string, i: number) => `${i + 1}. ${b}`).join('\n')}
+
+Return exactly ${bullets.length} tailored bullets as a JSON array of plain strings.`;
+
+      const raw = await this.chat([
+        { role: 'system', content: 'You are an expert resume writer specializing in ATS optimization. Respond with raw JSON only.' },
+        { role: 'user', content: prompt }
+      ]);
+
+      const enhanced = this.safeParseJson<string[]>(raw, bullets);
+      tailoredBullets.push({
+        role: exp.title || '',
+        company: exp.company || '',
+        original: bullets,
+        enhanced: Array.isArray(enhanced) ? enhanced : bullets
+      });
+    }
+
+    // ── Step 2: Generate matching cover letter ─────────────────────────────────
+    const coverLetter = await this.generateCoverLetter({
+      jobTitle: job.title,
+      company: job.company,
+      jobDescription: job.description,
+      resume,
+      tone: 'professional'
+    });
+
+    return { tailoredBullets, coverLetter };
   }
 }
 

@@ -583,4 +583,391 @@ router.post('/email/follow-up', authenticateToken, async (req: AuthRequest, res:
   }
 });
 
+// ─── SSE Streaming variants ──────────────────────────────────────────────────
+
+/**
+ * Helper: write a single SSE event to the response.
+ */
+function sseWrite(res: Response, event: string, data: unknown): void {
+  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+function sseHeaders(res: Response): void {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering
+  res.flushHeaders();
+}
+
+// Stream cover letter generation
+router.post('/cover-letter/generate/stream', authenticateToken, async (req: AuthRequest, res: Response) => {
+  sseHeaders(res);
+  try {
+    const { jobTitle, company, jobDescription, resume, tone = 'professional' } = req.body;
+
+    const prompt = `Write a compelling cover letter for the following position:
+
+Position: ${jobTitle}
+Company: ${company}
+${jobDescription ? `Job Description: ${jobDescription}` : ''}
+${resume ? `Candidate Background: ${JSON.stringify(resume)}` : ''}
+Tone: ${tone}
+
+Write a 300-400 word cover letter. Skip generic openers. Use CAR method. End with confident call to action. Return only the cover letter text.`;
+
+    let fullContent = '';
+    await openRouterService.chatStream(
+      [
+        { role: 'system', content: 'You are a senior career strategist who has written cover letters that helped candidates land roles at Fortune 500 companies.' },
+        { role: 'user', content: prompt }
+      ],
+      (token) => {
+        sseWrite(res, 'token', { token });
+        fullContent += token;
+      }
+    );
+
+    // Save and finish
+    const coverLetter = await saveToDb('cover letter stream', () =>
+      prisma.coverLetter.create({
+        data: {
+          userId: req.userId!,
+          title: `Cover Letter - ${jobTitle} at ${company}`,
+          content: fullContent,
+          targetCompany: company,
+          targetPosition: jobTitle,
+          tone: tone || 'professional',
+          isAiGenerated: true
+        }
+      })
+    );
+
+    saveToDb('activity log', () =>
+      prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_cover_letter_stream',
+          entityType: 'coverLetter',
+          entityId: coverLetter?.id || undefined,
+          metadata: { jobTitle, company, tone }
+        }
+      })
+    );
+
+    sseWrite(res, 'done', { coverLetterId: coverLetter?.id || null });
+    res.end();
+  } catch (error: any) {
+    sseWrite(res, 'error', { error: error?.message || 'Streaming failed' });
+    res.end();
+  }
+});
+
+// Stream resume optimize
+router.post('/resume/optimize/stream', authenticateToken, async (req: AuthRequest, res: Response) => {
+  sseHeaders(res);
+  try {
+    const { resume, jobDescription } = req.body;
+
+    const prompt = `Analyze this resume and provide optimization suggestions:
+
+Resume: ${JSON.stringify(resume)}
+${jobDescription ? `Target Job Description: ${jobDescription}` : ''}
+
+Evaluate the resume across ATS Compatibility, Impact & Metrics, Relevance, and Structure.
+Return a JSON object: { "suggestions": ["..."], "score": number, "keywords": ["..."] }
+IMPORTANT: All array items must be plain strings.`;
+
+    let fullContent = '';
+    await openRouterService.chatStream(
+      [
+        { role: 'system', content: 'You are a senior ATS optimization expert. Respond with raw JSON only.' },
+        { role: 'user', content: prompt }
+      ],
+      (token) => {
+        sseWrite(res, 'token', { token });
+        fullContent += token;
+      }
+    );
+
+    // Parse and persist
+    let analysis: { suggestions: string[]; score: number; keywords: string[] };
+    try {
+      const clean = fullContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+      analysis = JSON.parse(clean);
+    } catch {
+      analysis = { suggestions: [fullContent], score: 70, keywords: [] };
+    }
+
+    if (resume?.id) {
+      await saveToDb('resume optimize stream', () =>
+        prisma.resume.update({
+          where: { id: resume.id },
+          data: { atsScore: analysis.score, keywords: analysis.keywords }
+        })
+      );
+    }
+
+    sseWrite(res, 'done', { analysis });
+    res.end();
+  } catch (error: any) {
+    sseWrite(res, 'error', { error: error?.message || 'Streaming failed' });
+    res.end();
+  }
+});
+
+// Stream company analysis
+router.post('/company/analyze/stream', authenticateToken, async (req: AuthRequest, res: Response) => {
+  sseHeaders(res);
+  try {
+    const { companyName, role } = req.body;
+
+    const prompt = `Provide insights about ${companyName}${role ? ` for a ${role} position` : ''}:
+
+Research and analyze ${companyName} from a job-seeker's perspective. Be balanced and honest.
+
+Return this exact JSON schema:
+{
+  "overview": "string",
+  "culture": "string",
+  "interviewTips": ["string"],
+  "questionsToAsk": ["string"],
+  "prosAndCons": { "pros": ["string"], "cons": ["string"] }
+}
+IMPORTANT: All array items must be plain strings.`;
+
+    let fullContent = '';
+    await openRouterService.chatStream(
+      [
+        { role: 'system', content: 'You are a career research analyst who provides balanced, honest assessments. Respond with raw JSON only.' },
+        { role: 'user', content: prompt }
+      ],
+      (token) => {
+        sseWrite(res, 'token', { token });
+        fullContent += token;
+      }
+    );
+
+    let analysis: any;
+    try {
+      const clean = fullContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+      analysis = JSON.parse(clean);
+    } catch {
+      analysis = { overview: fullContent, culture: '', interviewTips: [], questionsToAsk: [], prosAndCons: { pros: [], cons: [] } };
+    }
+
+    const companyResearch = await saveToDb('company research stream', () =>
+      prisma.companyResearch.create({
+        data: {
+          userId: req.userId!,
+          companyName,
+          description: analysis.overview,
+          culture: analysis.culture,
+          interviewProcess: analysis.interviewTips?.join('\n'),
+          prosNotes: analysis.prosAndCons?.pros?.join('\n'),
+          consNotes: analysis.prosAndCons?.cons?.join('\n')
+        }
+      })
+    );
+
+    sseWrite(res, 'done', { analysis, companyResearchId: companyResearch?.id || null });
+    res.end();
+  } catch (error: any) {
+    sseWrite(res, 'error', { error: error?.message || 'Streaming failed' });
+    res.end();
+  }
+});
+
+// One-click tailor: tailored bullets + cover letter for a specific job
+router.post('/tailor-for-job', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { resumeId, jobId } = req.body;
+
+    if (!resumeId || !jobId) {
+      return res.status(400).json({ error: 'resumeId and jobId are required' });
+    }
+
+    const [resume, job] = await Promise.all([
+      prisma.resume.findFirst({ where: { id: resumeId, userId: req.userId } }),
+      prisma.job.findUnique({ where: { id: jobId } })
+    ]);
+
+    if (!resume) return res.status(404).json({ error: 'Resume not found' });
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const { tailoredBullets, coverLetter } = await openRouterService.tailorForJob(resume, job);
+
+    // Persist tailored bullets as EnhancedBullets records (one per experience entry)
+    const savedBullets = await saveToDb('tailor bullets', () =>
+      Promise.all(
+        tailoredBullets.map(tb =>
+          prisma.enhancedBullets.create({
+            data: {
+              userId: req.userId!,
+              resumeId,
+              role: tb.role,
+              company: tb.company,
+              originalBullets: tb.original,
+              enhancedBullets: tb.enhanced
+            }
+          })
+        )
+      )
+    );
+
+    // Persist cover letter
+    const savedCoverLetter = await saveToDb('tailor cover letter', () =>
+      prisma.coverLetter.create({
+        data: {
+          userId: req.userId!,
+          title: `Tailored Cover Letter – ${job.title} at ${job.company}`,
+          content: coverLetter,
+          targetCompany: job.company,
+          targetPosition: job.title,
+          tone: 'professional',
+          isAiGenerated: true
+        }
+      })
+    );
+
+    await saveToDb('activity log', () =>
+      prisma.activityLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'ai_tailor_for_job',
+          entityType: 'resume',
+          entityId: resumeId,
+          metadata: {
+            jobId,
+            jobTitle: job.title,
+            company: job.company,
+            bulletEntriesEnhanced: tailoredBullets.length
+          }
+        }
+      })
+    );
+
+    res.json({
+      tailoredBullets,
+      coverLetter,
+      savedBulletIds: savedBullets?.map(b => b.id) || [],
+      coverLetterId: savedCoverLetter?.id || null
+    });
+  } catch (error) {
+    console.error('Tailor-for-job error:', error);
+    res.status(500).json({ error: 'Failed to tailor resume for job' });
+  }
+});
+
+// Helper to extract JSON from an AI response
+function tryParseJson(text: string): any {
+  try { return JSON.parse(text); } catch {}
+  const block = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (block) { try { return JSON.parse(block[1]); } catch {} }
+  const obj = text.match(/\{[\s\S]*\}/);
+  if (obj) { try { return JSON.parse(obj[0]); } catch {} }
+  return { raw: text };
+}
+
+// Rejection Analysis - structured feedback on why a candidate may have been rejected
+router.post('/rejection-analysis', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { jobDescription, resume, applicationDetails, rejectionMessage } = req.body || {};
+    if (!jobDescription) return res.status(400).json({ error: 'jobDescription is required' });
+    const messages = [
+      { role: 'system' as const, content: 'You are an expert career coach. Analyze a job rejection objectively and provide actionable feedback. Respond with ONLY valid JSON.' },
+      { role: 'user' as const, content: `Job description:\n${jobDescription}\n\nCandidate resume:\n${JSON.stringify(resume || {}, null, 2)}\n\nApplication details:\n${JSON.stringify(applicationDetails || {}, null, 2)}\n\nRejection message (if any):\n${rejectionMessage || '(none)'}\n\nReturn JSON: { likely_reasons:[{reason,evidence,severity:"low|medium|high"}], skill_gaps:[], experience_gaps:[], resume_signal_issues:[], strong_points:[], improvements_for_next_application:[{action,how,priority}], reapply_recommendation:"yes|no|maybe", followup_email_suggestion, summary }.` }
+    ];
+    const text = await openRouterService.chat(messages, { temperature: 0.3, maxTokens: 1500 });
+    res.json({ analysis: tryParseJson(text) });
+  } catch (error) {
+    console.error('Rejection analysis error:', error);
+    res.status(500).json({ error: 'Failed to run rejection analysis' });
+  }
+});
+
+// Offer Negotiation Simulator - simulate counter-offer turns
+router.post('/offer-negotiation-simulator', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { offer, candidateProfile, marketBenchmarks, priorities, lastMessage } = req.body || {};
+    if (!offer) return res.status(400).json({ error: 'offer is required' });
+    const messages = [
+      { role: 'system' as const, content: 'You are a compensation negotiation coach. Simulate the recruiter side AND coach the candidate. Respond with ONLY valid JSON.' },
+      { role: 'user' as const, content: `Offer details:\n${JSON.stringify(offer, null, 2)}\n\nCandidate profile:\n${JSON.stringify(candidateProfile || {}, null, 2)}\n\nMarket benchmarks:\n${JSON.stringify(marketBenchmarks || {}, null, 2)}\n\nPriorities (ordered):\n${JSON.stringify(priorities || ['base', 'equity', 'bonus', 'remote', 'PTO'])}\n\nLast candidate message (if any):\n${lastMessage || '(none — opening turn)'}\n\nReturn JSON: { coach_brief:{leverage,risk,zopa_estimate,best_alternative}, recommended_counter:{base,equity,bonus,signon,start_date,other}, recommended_message_to_send, simulated_recruiter_reply, recruiter_likely_responses:[{stance,probability,response}], next_step_options:[{move,rationale,risk}] }.` }
+    ];
+    const text = await openRouterService.chat(messages, { temperature: 0.5, maxTokens: 2000 });
+    res.json({ simulation: tryParseJson(text) });
+  } catch (error) {
+    console.error('Negotiation simulator error:', error);
+    res.status(500).json({ error: 'Failed to simulate negotiation' });
+  }
+});
+
+// Career Trajectory Analyzer - predict career path & gaps to fill
+router.post('/career-trajectory-analyzer', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { resume, currentRole, targetRole, horizonYears } = req.body || {};
+    if (!resume && !currentRole) return res.status(400).json({ error: 'resume or currentRole is required' });
+    const messages = [
+      { role: 'system' as const, content: 'You are a career-path strategist. Project realistic next moves and identify gaps to close. Respond with ONLY valid JSON.' },
+      { role: 'user' as const, content: `Resume:\n${JSON.stringify(resume || {}, null, 2)}\n\nCurrent role: ${currentRole || ''}\nTarget role: ${targetRole || ''}\nHorizon: ${horizonYears || 5} years\n\nReturn JSON: { current_level, predicted_paths:[{path_name,steps:[{role,timeframe,probability,key_responsibilities,typical_comp_range}], milestones:[]}], key_skill_gaps:[{skill,closure_methods:[],estimated_time}], risk_factors:[], advantage_factors:[], one_year_plan:[{action,owner:"self",priority,evidence}], three_year_vision, summary }.` }
+    ];
+    const text = await openRouterService.chat(messages, { temperature: 0.4, maxTokens: 2200 });
+    res.json({ trajectory: tryParseJson(text) });
+  } catch (error) {
+    console.error('Career trajectory error:', error);
+    res.status(500).json({ error: 'Failed to analyze career trajectory' });
+  }
+});
+
+// Helper to map "no key" errors to 503
+function isMissingKeyError(err: any): boolean {
+  const msg = String(err?.message || '');
+  return /OPENROUTER_API_KEY|api key not configured|api key/i.test(msg);
+}
+
+// Application Tracker - generate a structured tracking summary + next-step plan
+router.post('/application-tracker', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { applications, focusJobIds, candidateProfile } = req.body || {};
+    if (!applications || !Array.isArray(applications) || applications.length === 0) {
+      return res.status(400).json({ error: 'applications (non-empty array) is required' });
+    }
+    const messages = [
+      { role: 'system' as const, content: 'You are a job-search ops coach. Analyze a candidate\'s application pipeline and produce a structured status tracker with prioritized next steps. Respond with ONLY valid JSON.' },
+      { role: 'user' as const, content: `Applications:\n${JSON.stringify(applications, null, 2)}\n\nFocus job IDs (if any): ${JSON.stringify(focusJobIds || [])}\n\nCandidate profile:\n${JSON.stringify(candidateProfile || {}, null, 2)}\n\nReturn JSON: { pipeline_summary:{total,by_stage,by_status,stale_count}, per_application:[{job_id,company,role,stage,health:"green|yellow|red",last_activity,days_in_stage,next_action,suggested_followup_message}], priority_actions:[{action,reason,priority:"high|medium|low",due_in_days}], pipeline_recommendations:[], summary }.` }
+    ];
+    const text = await openRouterService.chat(messages, { temperature: 0.3, maxTokens: 2000 });
+    res.json({ tracker: tryParseJson(text) });
+  } catch (error: any) {
+    console.error('Application tracker error:', error);
+    if (isMissingKeyError(error)) {
+      return res.status(503).json({ error: 'AI service unavailable: OPENROUTER_API_KEY not configured on server.' });
+    }
+    res.status(500).json({ error: 'Failed to run application tracker' });
+  }
+});
+
+// Interview Scheduling Optimizer - rank candidate slots vs constraints
+router.post('/interview-scheduling-optimizer', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { candidateAvailability, recruiterAvailability, interviewType, durationMinutes, timezone, priorities, constraints } = req.body || {};
+    if (!candidateAvailability || !recruiterAvailability) {
+      return res.status(400).json({ error: 'candidateAvailability and recruiterAvailability are required' });
+    }
+    const messages = [
+      { role: 'system' as const, content: 'You are an interview-scheduling optimizer. Rank candidate slots based on overlap, energy/circadian factors, prep buffer, and recruiter constraints. Respond with ONLY valid JSON.' },
+      { role: 'user' as const, content: `Candidate availability:\n${JSON.stringify(candidateAvailability, null, 2)}\n\nRecruiter availability:\n${JSON.stringify(recruiterAvailability, null, 2)}\n\nInterview type: ${interviewType || 'general'}\nDuration (minutes): ${durationMinutes || 60}\nTimezone: ${timezone || 'unspecified'}\nCandidate priorities: ${JSON.stringify(priorities || ['energy_peak', 'morning_freshness', 'prep_buffer'])}\nConstraints: ${JSON.stringify(constraints || {})}\n\nReturn JSON: { ranked_slots:[{start,end,timezone,score,reasoning,risk_flags:[]}], top_recommendation:{start,end,reasoning}, conflicts:[], suggestions_for_candidate:[{action,why}], message_to_recruiter, summary }.` }
+    ];
+    const text = await openRouterService.chat(messages, { temperature: 0.3, maxTokens: 1800 });
+    res.json({ scheduling: tryParseJson(text) });
+  } catch (error: any) {
+    console.error('Interview scheduling optimizer error:', error);
+    if (isMissingKeyError(error)) {
+      return res.status(503).json({ error: 'AI service unavailable: OPENROUTER_API_KEY not configured on server.' });
+    }
+    res.status(500).json({ error: 'Failed to run scheduling optimizer' });
+  }
+});
+
 export default router;

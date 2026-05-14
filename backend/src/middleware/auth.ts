@@ -12,6 +12,8 @@ export interface AuthRequest extends Request {
   userId?: string;
   user?: any;
   userRole?: string;
+  file?: any; // populated by multer when used
+  files?: any;
 }
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
