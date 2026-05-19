@@ -139,3 +139,7 @@ app.use('/api/gap-no-browser-extension-for-oneclick-apply', _b07_no_browser_exte
 app.use('/api/gap-no-notificationsemail-automation', _b07_no_notificationsemail_automation);
 app.use('/api/gap-no-public-webhooks', _b07_no_public_webhooks);
 // === End Batch 07 mounts ===
+
+// Resume Views custom-views mount (4 endpoints)
+import customViewsRoutes from './routes/customViews';
+app.use('/api/custom-views', customViewsRoutes);

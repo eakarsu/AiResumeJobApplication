@@ -42,6 +42,7 @@ import AIOfferNegotiationSimulator from './pages/AIOfferNegotiationSimulator';
 import AICareerTrajectoryAnalyzer from './pages/AICareerTrajectoryAnalyzer';
 import AIApplicationTracker from './pages/AIApplicationTracker';
 import AIInterviewSchedulingOptimizer from './pages/AIInterviewSchedulingOptimizer';
+import CustomViewsPage from './pages/CustomViewsPage';
 
 // === Batch 07 Gaps & Frontend Mounts ===
 import CfAgenticApplicationSuite from './pages/CfAgenticApplicationSuite';
@@ -133,6 +134,7 @@ function App() {
         <Route path="ai-career-trajectory" element={<AICareerTrajectoryAnalyzer />} />
         <Route path="ai-application-tracker" element={<AIApplicationTracker />} />
         <Route path="ai-interview-scheduling" element={<AIInterviewSchedulingOptimizer />} />
+        <Route path="resume-views" element={<CustomViewsPage />} />
       </Route>
           // === Batch 07 Gaps & Frontend Mounts ===
           <Route path='/cf-agentic-application-suite' element={<CfAgenticApplicationSuite />} />

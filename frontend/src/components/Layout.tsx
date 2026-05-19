@@ -40,6 +40,7 @@ const navigation = [
   { name: 'Companies', href: '/companies', icon: Building2 },
   { name: 'Network', href: '/network', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Resume Views', href: '/resume-views', icon: BarChart3 },
 ];
 
 const aiNavigation = [
