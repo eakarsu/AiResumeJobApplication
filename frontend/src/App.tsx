@@ -63,6 +63,9 @@ import GapNoBackgroundCheckStatusTracker from './pages/GapNoBackgroundCheckStatu
 import GapNoBrowserExtensionForOneclickApply from './pages/GapNoBrowserExtensionForOneclickApply';
 import GapNoNotificationsemailAutomation from './pages/GapNoNotificationsemailAutomation';
 import GapNoPublicWebhooks from './pages/GapNoPublicWebhooks';
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
 // === End Batch 07 ===
 
 
@@ -87,6 +90,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 function App() {
   return (
     <Routes>
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

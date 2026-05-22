@@ -35,3 +35,26 @@ All three reuse `openRouterService.chat()` and `authenticateToken`, with a local
 **Syntax check:** N/A.
 
 **Notes:** `frontend/src/pages/AIRejectionAnalysis.tsx`, `AIOfferNegotiationSimulator.tsx`, and `AICareerTrajectoryAnalyzer.tsx` each call the matching pass-2 endpoint via the shared `api` axios client (Bearer token already attached). Routes registered in `App.tsx` at `/ai-rejection-analysis`, `/ai-offer-negotiation`, `/ai-career-trajectory`. Idempotence rule applied.
+
+## Apply pass 6 (close-out)
+
+**Items:**
+1. `POST /api/ai/application-tracker` — application status helper.
+2. `POST /api/ai/interview-scheduling-optimizer` — slot ranking endpoint.
+
+**Action:** LEFT-AS-IS (both endpoints already implemented in a prior pass).
+
+**Files:** `backend/src/routes/ai.ts` (existing; routes at lines 930 and 952), `_AUDIT_NOTE.md` (this section).
+
+**Syntax check:** `node --check backend/src/routes/ai.ts` → PASS (exit 0).
+
+**Duplicate-grep findings:**
+- `/application-tracker` already defined at `ai.ts:930` — accepts `{ applications[], focusJobIds?, candidateProfile? }`, returns `{ tracker: { pipeline_summary, per_application[], priority_actions[], pipeline_recommendations[], summary } }`. Existing contract is a pipeline-level (multi-application) variant; backlog spec was single-application. House style (auth + openRouterService + tryParseJson + isMissingKeyError 503 branch) already matches.
+- `/interview-scheduling-optimizer` already defined at `ai.ts:952` — accepts `{ candidateAvailability, recruiterAvailability, interviewType?, durationMinutes?, timezone?, priorities?, constraints? }`, returns `{ scheduling: { ranked_slots[], top_recommendation, conflicts[], suggestions_for_candidate[], message_to_recruiter, summary } }`. Equivalent semantics to backlog spec (ranked_slots + top_recommendation ≈ best_slot; conflicts captured; buffer expressible via constraints).
+
+**Decision:** No re-implementation under append-only + no-duplicates rule; introducing a second handler at the same route would shadow or collide. Backlog items 1 and 2 are considered satisfied by the existing handlers.
+
+**Remaining backlog:**
+- NEEDS-CREDS: LinkedIn OAuth profile sync.
+- NEEDS-CREDS: background check status integration.
+- NEEDS-PRODUCT-DECISION: video interview feedback + STT/vision pipeline.
