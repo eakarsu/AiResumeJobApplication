@@ -6,7 +6,7 @@ import prisma from '../services/prisma';
 
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret';
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -25,7 +25,11 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    if (JWT_SECRET.length < 32) return res.status(503).json({ error: 'Secure JWT configuration required' });
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { userId: string; tenantId?: string; role?: string; subjectIds?: string[] };
+    if (!decoded.tenantId || !decoded.role || !Array.isArray(decoded.subjectIds)) {
+      return res.status(401).json({ error: 'Signed tenant, role, and subject scope required' });
+    }
 
     // Verify user still exists in DB and fetch role
     const user = await prisma.user.findUnique({
@@ -50,7 +54,7 @@ export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { userId: string };
       req.userId = decoded.userId;
     } catch (error) {
       // Token invalid, but that's okay for optional auth
@@ -71,6 +75,7 @@ export const requireRole = (...roles: string[]) => {
 export const requireAdmin = requireRole('admin');
 export const requirePremium = requireRole('admin', 'premium');
 
-export const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+export const generateToken = (userId: string, role: string = 'user'): string => {
+  if (JWT_SECRET.length < 32 || !process.env.GOVERNANCE_TENANT_ID) throw new Error('Secure JWT and tenant configuration required');
+  return jwt.sign({ sub: userId, userId, role, tenantId: process.env.GOVERNANCE_TENANT_ID, subjectIds: [`candidate:${userId}`] }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '24h' });
 };

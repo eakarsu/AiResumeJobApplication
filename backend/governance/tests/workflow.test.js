@@ -1,0 +1,4 @@
+'use strict'; const test=require('node:test'); const assert=require('node:assert/strict'); const {evaluate}=require('../domain');
+const ctx={actor:'candidate-1',tenant:'tenant-1'}; const base={ownerId:'candidate-1',targetRole:'Engineer',progressionPolicyVersion:'2026.1',consent:true,assessments:[{skill:'testing',score:60},{skill:'javascript',score:90}],workItems:[{id:'practice-1',status:'open'}],accessibilityMode:'screen-reader'};
+test('career workflow recommends transparent work without predicting outcomes',()=>{const out=evaluate(base,ctx); assert.deepEqual(out,evaluate(base,ctx)); assert.equal(out.result.predictionMade,false); assert.equal(out.result.humanReviewRequired,true); assert.deepEqual(out.result.skillGaps.map(x=>x.skill),['testing']);});
+test('consent, ownership, policy and protected traits fail closed',()=>{const out=evaluate({...base,ownerId:'other',consent:false,progressionPolicyVersion:'',age:40},ctx); assert.ok(out.errors.length>=4);});

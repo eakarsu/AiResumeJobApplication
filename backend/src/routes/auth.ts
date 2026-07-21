@@ -52,7 +52,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
       }
     });
 
-    const token = generateToken(user.id);
+    const token = generateToken(user.id, user.role);
 
     // Send verification email (falls back to console log if RESEND_API_KEY not set)
     sendEmailVerification(user.email, emailVerificationToken).catch(err =>
@@ -91,7 +91,7 @@ router.post('/login', loginValidation, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = generateToken(user.id);
+    const token = generateToken(user.id, user.role);
 
     // Log activity
     await prisma.activityLog.create({
