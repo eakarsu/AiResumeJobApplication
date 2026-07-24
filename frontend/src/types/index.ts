@@ -181,6 +181,8 @@ export interface CompanyResearch {
   founded?: number;
   headquarters?: string;
   website?: string;
+  linkedinUrl?: string;
+  revenue?: string;
   glassdoorRating?: number;
   employeeCount?: string;
   description?: string;

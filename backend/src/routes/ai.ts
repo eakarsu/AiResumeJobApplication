@@ -15,6 +15,16 @@ async function saveToDb<T>(label: string, fn: () => Promise<T>): Promise<T | nul
   }
 }
 
+router.get('/history', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const rows = await prisma.$queryRawUnsafe<any[]>('SELECT id,input,output,model,"createdAt" FROM resume_ai_interactions WHERE "userId"=$1 ORDER BY "createdAt" DESC LIMIT 50', req.userId!);
+    res.json({ history: rows });
+  } catch (error) {
+    console.error('AI history error:', error);
+    res.status(500).json({ error: 'Failed to load AI history' });
+  }
+});
+
 // Generic AI chat endpoint
 router.post('/chat', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -25,7 +35,8 @@ router.post('/chat', authenticateToken, async (req: AuthRequest, res: Response) 
     }
 
     const response = await openRouterService.chat(messages, { temperature, maxTokens });
-    res.json({ response });
+    const saved = await prisma.$queryRawUnsafe<any[]>('INSERT INTO resume_ai_interactions(id,"userId",input,output,model) VALUES(gen_random_uuid(),$1,$2::jsonb,$3::jsonb,$4) RETURNING id', req.userId!, JSON.stringify({ messages, temperature, maxTokens }), JSON.stringify({ response }), process.env.OPENROUTER_MODEL!);
+    res.json({ response, interactionId: saved[0].id, model: process.env.OPENROUTER_MODEL });
   } catch (error) {
     console.error('AI chat error:', error);
     res.status(500).json({ error: 'AI service error' });

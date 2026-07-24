@@ -4,8 +4,8 @@ import path from 'path';
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
-const AI_MODEL = process.env.OPENROUTER_MODEL || process.env.AI_MODEL || 'anthropic/claude-haiku-4.5';
+const OPENROUTER_BASE_URL = String(process.env.OPENROUTER_BASE_URL || '').replace(/\/+$/, '');
+const AI_MODEL = process.env.OPENROUTER_MODEL || '';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -37,6 +37,9 @@ export class OpenRouterService {
     this.apiKey = OPENROUTER_API_KEY || '';
     this.baseUrl = OPENROUTER_BASE_URL;
     this.model = AI_MODEL;
+    if (!this.apiKey) throw new Error('OPENROUTER_API_KEY is required');
+    if (!this.model) throw new Error('OPENROUTER_MODEL is required');
+    if (this.baseUrl !== 'https://openrouter.ai/api/v1') throw new Error('OPENROUTER_BASE_URL must be https://openrouter.ai/api/v1');
   }
 
   // Helper to clean JSON response from markdown code blocks
@@ -155,7 +158,9 @@ export class OpenRouterService {
     }
 
     const data = await response.json() as OpenRouterResponse;
-    return data.choices[0]?.message?.content || '';
+    const content = String(data.choices[0]?.message?.content || '').trim();
+    if (!content) throw new Error('OpenRouter returned an empty response');
+    return content;
   }
 
   // Resume AI Features

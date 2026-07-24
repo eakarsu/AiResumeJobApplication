@@ -46,10 +46,10 @@ export interface ResumeData {
     firstName?: string;
     lastName?: string;
     email?: string;
-    phone?: string;
-    location?: string;
-    linkedinUrl?: string;
-    portfolioUrl?: string;
+    phone?: string | null;
+    location?: string | null;
+    linkedinUrl?: string | null;
+    portfolioUrl?: string | null;
   };
 }
 
@@ -219,7 +219,7 @@ export async function exportResumePdf(resume: ResumeData): Promise<Buffer> {
   });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     const pdfBuffer = await page.pdf({
       format: 'Letter',
       margin: { top: '0', right: '0', bottom: '0', left: '0' },

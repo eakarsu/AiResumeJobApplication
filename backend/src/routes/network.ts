@@ -334,7 +334,7 @@ router.post('/ai/follow-up', authenticateToken, async (req: AuthRequest, res: Re
       });
       if (contact) {
         recipientName = `${contact.firstName} ${contact.lastName}`;
-        recipientRole = contact.position;
+        recipientRole = contact.position || undefined;
       }
     }
 

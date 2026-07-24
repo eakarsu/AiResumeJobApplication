@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 import type { AuthRequest } from './auth';
 
@@ -39,7 +39,7 @@ export const aiRateLimiterPerUser = rateLimit({
   keyGenerator: (req: Request) => {
     const a = req as AuthRequest;
     if (a.userId) return `user:${a.userId}`;
-    return req.ip || 'unknown';
+    return ipKeyGenerator(req.ip || 'unknown');
   },
   message: { error: 'AI hourly limit reached (20/hour). Please wait before making more AI requests.' },
 });
