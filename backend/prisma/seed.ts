@@ -8,6 +8,12 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const prisma = new PrismaClient();
 
+function requireDemoPassword() {
+  const password = process.env.DEMO_PASSWORD || process.env.SEED_DEMO_PASSWORD || process.env.DEMO_SEED_PASSWORD || '';
+  if (password.length < 12 || password.length > 1024) throw new Error('DEMO_PASSWORD must contain 12-1024 characters');
+  return password;
+}
+
 async function main() {
   console.log('🌱 Starting database seed...');
 
@@ -35,7 +41,7 @@ async function main() {
 
   // Create demo user
   console.log('👤 Creating demo user...');
-  const hashedPassword = await bcrypt.hash('demo123', 10);
+  const hashedPassword = await bcrypt.hash(requireDemoPassword(), 10);
   const user = await prisma.user.create({
     data: {
       email: 'demo@example.com',
@@ -1222,7 +1228,7 @@ async function main() {
   console.log('');
   console.log('📧 Demo User Credentials:');
   console.log('   Email: demo@example.com');
-  console.log('   Password: demo123');
+  console.log('Demo login users provisioned from the local environment.');
   console.log('');
   console.log('📊 Seed Summary:');
   console.log('   - 1 demo user');
