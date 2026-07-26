@@ -41,11 +41,26 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,ht
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
+const isLocalDevelopmentOrigin = (origin: string) => {
+  if (process.env.NODE_ENV === 'production') return false;
+  try {
+    const url = new URL(origin);
+    const expectedPort = String(process.env.FRONTEND_PORT || '');
+    const localHost = url.hostname === 'localhost'
+      || url.hostname === '127.0.0.1'
+      || /^10\./.test(url.hostname)
+      || /^192\.168\./.test(url.hostname)
+      || /^172\.(1[6-9]|2\d|3[01])\./.test(url.hostname);
+    return url.protocol === 'http:' && localHost && Boolean(expectedPort) && url.port === expectedPort;
+  } catch {
+    return false;
+  }
+};
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (allowedOrigins.includes(origin) || isLocalDevelopmentOrigin(origin)) return cb(null, true);
       return cb(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
