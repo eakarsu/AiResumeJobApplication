@@ -105,7 +105,7 @@ const Login: React.FC = () => {
               onClick={handleDemoLogin}
               className="w-full btn-secondary py-3"
             >
-              Use Demo Account
+              Auto Fill Demo Credentials
             </button>
           </div>
 
