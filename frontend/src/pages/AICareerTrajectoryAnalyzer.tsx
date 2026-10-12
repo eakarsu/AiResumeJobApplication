@@ -1,3 +1,6 @@
+import FormattedAIReport from '../components/FormattedAIReport';
+
+import FullAIExamples, { useFullAIExamples } from "../components/FullAIExamples";
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -25,6 +28,8 @@ interface CareerResult {
 }
 
 const AICareerTrajectoryAnalyzer: React.FC = () => {
+  const fullAIExamples = useFullAIExamples();
+
   const navigate = useNavigate();
   const [currentRole, setCurrentRole] = useState('');
   const [yearsExperience, setYearsExperience] = useState(5);
@@ -75,36 +80,36 @@ const AICareerTrajectoryAnalyzer: React.FC = () => {
         <p className="text-gray-500 mt-2">Multi-path career projection with skill-gap closure plans and 1- and 3-year milestones.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4" data-full-ai-workspace="AICareerTrajectoryAnalyzer"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Current role *</label>
-            <input value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
+            <input value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} className="w-full border rounded-lg px-3 py-2" required data-full-ai-field={fullAIExamples.bind({ current: currentRole, change: (e) => setCurrentRole(e.target.value), label: "currentRole", manual: false, json: false, sample: '' }, "p1-3016", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Years experience</label>
-            <input type="number" min="0" max="50" value={yearsExperience} onChange={(e) => setYearsExperience(parseInt(e.target.value) || 0)} className="w-full border rounded-lg px-3 py-2" />
+            <input type="number" min="0" max="50" value={yearsExperience} onChange={(e) => setYearsExperience(parseInt(e.target.value) || 0)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: yearsExperience, change: (e) => setYearsExperience(parseInt(e.target.value) || 0), label: "yearsExperience", manual: false, json: false, sample: 5 }, "p1-3283", undefined)} />
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Skills (comma separated) *</label>
-          <textarea value={skills} onChange={(e) => setSkills(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" required />
+          <textarea value={skills} onChange={(e) => setSkills(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" required data-full-ai-field={fullAIExamples.bind({ current: skills, change: (e) => setSkills(e.target.value), label: "skills", manual: false, json: false, sample: '' }, "p1-3615", undefined)} />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Interests / passions</label>
-          <textarea value={interests} onChange={(e) => setInterests(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
+          <textarea value={interests} onChange={(e) => setInterests(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: interests, change: (e) => setInterests(e.target.value), label: "interests", manual: false, json: false, sample: '' }, "p1-3881", undefined)} />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Constraints (location, family, comp floor, etc.)</label>
-          <textarea value={constraints} onChange={(e) => setConstraints(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
+          <textarea value={constraints} onChange={(e) => setConstraints(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: constraints, change: (e) => setConstraints(e.target.value), label: "constraints", manual: false, json: false, sample: '' }, "p1-4172", undefined)} />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Target industries (comma separated)</label>
-          <input value={targetIndustries} onChange={(e) => setTargetIndustries(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. fintech, climate tech, biotech" />
+          <input value={targetIndustries} onChange={(e) => setTargetIndustries(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. fintech, climate tech, biotech" data-full-ai-field={fullAIExamples.bind({ current: targetIndustries, change: (e) => setTargetIndustries(e.target.value), label: "targetIndustries", manual: false, json: false, sample: '' }, "p1-4454", undefined)} />
         </div>
 
         {error && (
@@ -210,7 +215,7 @@ const ListSection: React.FC<{ title: string; items: string[] }> = ({ title, item
   <div>
     <h3 className="font-semibold mb-2">{title}</h3>
     <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-      {items.map((it, i) => <li key={i}>{typeof it === 'string' ? it : JSON.stringify(it)}</li>)}
+      {items.map((it, i) => <li key={i}>{typeof it === 'string' ? it : <FormattedAIReport response={it} title={title} />}</li>)}
     </ul>
   </div>
 );

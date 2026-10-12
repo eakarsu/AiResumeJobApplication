@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { networkAPI } from '../services/api';
@@ -27,7 +28,7 @@ const Network: React.FC = () => {
   const fetchContacts = async () => {
     try {
       const response = await networkAPI.getAll({ search });
-      setContacts(response.data.contacts);
+      setContacts(recordList<NetworkContact>(response.data, 'contacts'));
     } catch (error) {
       console.error('Failed to fetch contacts:', error);
     } finally {

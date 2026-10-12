@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { aiAPI, resumesAPI, jobsAPI } from '../services/api';
@@ -47,8 +48,8 @@ const AIJobMatcher: React.FC = () => {
         resumesAPI.getAll(),
         jobsAPI.getAll({ limit: 50 })
       ]);
-      setResumes(resumesRes.data);
-      setJobs(jobsRes.data.jobs || jobsRes.data);
+      setResumes(recordList(resumesRes.data));
+      setJobs(recordList(jobsRes.data, 'jobs'));
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {

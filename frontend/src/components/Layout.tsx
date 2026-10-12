@@ -1,3 +1,4 @@
+import AIReportLibrary from "./AIReportLibrary";
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -161,7 +162,7 @@ const Layout: React.FC = () => {
             })}
           </div>
         </nav>
-      </aside>
+      <AIReportLibrary /></aside>
 
       {/* Main content */}
       <div className="lg:ml-64">

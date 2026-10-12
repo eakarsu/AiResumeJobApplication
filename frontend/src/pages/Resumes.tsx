@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { resumesAPI } from '../services/api';
@@ -28,7 +29,7 @@ const Resumes: React.FC = () => {
   const fetchResumes = async () => {
     try {
       const response = await resumesAPI.getAll();
-      setResumes(response.data);
+      setResumes(recordList<Resume>(response.data));
     } catch (error) {
       console.error('Failed to fetch resumes:', error);
     } finally {

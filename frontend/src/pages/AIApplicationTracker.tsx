@@ -1,3 +1,5 @@
+
+import FullAIExamples, { useFullAIExamples } from "../components/FullAIExamples";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -23,6 +25,8 @@ interface TrackerResult {
 }
 
 const AIApplicationTracker: React.FC = () => {
+  const fullAIExamples = useFullAIExamples();
+
   const navigate = useNavigate();
   const [applicationsJson, setApplicationsJson] = useState('');
   const [focusJobIds, setFocusJobIds] = useState('');
@@ -93,7 +97,7 @@ const AIApplicationTracker: React.FC = () => {
         <p className="text-gray-500 mt-2">Score your application pipeline and get prioritized next steps.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4" data-full-ai-workspace="AIApplicationTracker"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
         <div>
           <label className="block text-sm font-medium mb-1">Applications (JSON array) *</label>
           <textarea
@@ -102,7 +106,7 @@ const AIApplicationTracker: React.FC = () => {
             rows={10}
             className="w-full border rounded-lg px-3 py-2 font-mono text-xs"
             placeholder='[{ "id": 1, "company": "...", "role": "...", "stage": "...", "applied_at": "...", "last_activity": "..." }]'
-            required
+            required data-full-ai-field={fullAIExamples.bind({ current: applicationsJson, change: (e) => setApplicationsJson(e.target.value), label: "applicationsJson", manual: false, json: true, sample: '' }, "p1-3753", undefined)}
           />
           <p className="text-xs text-gray-500 mt-1">Auto-filled from your /applications API when available.</p>
         </div>
@@ -113,7 +117,7 @@ const AIApplicationTracker: React.FC = () => {
               value={focusJobIds}
               onChange={(e) => setFocusJobIds(e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
-              placeholder="e.g. 12, 45, 78"
+              placeholder="e.g. 12, 45, 78" data-full-ai-field={fullAIExamples.bind({ current: focusJobIds, change: (e) => setFocusJobIds(e.target.value), label: "focusJobIds", manual: false, json: false, sample: '' }, "p1-4454", undefined)}
             />
           </div>
           <div>
@@ -122,7 +126,7 @@ const AIApplicationTracker: React.FC = () => {
               value={candidateProfile}
               onChange={(e) => setCandidateProfile(e.target.value)}
               className="w-full border rounded-lg px-3 py-2 font-mono text-xs"
-              placeholder='{"yearsExperience": 6, "targetRole": "Sr. PM"}'
+              placeholder='{"yearsExperience": 6, "targetRole": "Sr. PM"}' data-full-ai-field={fullAIExamples.bind({ current: candidateProfile, change: (e) => setCandidateProfile(e.target.value), label: "candidateProfile", manual: false, json: false, sample: '' }, "p1-4828", undefined)}
             />
           </div>
         </div>

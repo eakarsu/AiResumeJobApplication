@@ -1,3 +1,5 @@
+import { recordList } from '../utils/recordList';
+import FormattedAIReport from '../components/FormattedAIReport';
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 
@@ -23,7 +25,7 @@ export default function ResumeUpload() {
   const refresh = async () => {
     try {
       const res = await api.get('/resume-upload?page=1&limit=20');
-      setUploads(res.data?.data || []);
+      setUploads(recordList(res.data));
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Failed to load uploads');
     } finally {
@@ -95,9 +97,7 @@ export default function ResumeUpload() {
       {parsedPreview && (
         <div className="bg-emerald-50 border border-emerald-200 rounded p-3">
           <h2 className="font-semibold mb-1">Parsed preview</h2>
-          <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(parsedPreview, null, 2)}
-          </pre>
+          <FormattedAIReport response={parsedPreview} title="Parsed preview" />
         </div>
       )}
 

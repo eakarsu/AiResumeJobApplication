@@ -1,3 +1,6 @@
+import FormattedAIReport from '../components/FormattedAIReport';
+
+import FullAIExamples, { useFullAIExamples } from "../components/FullAIExamples";
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -16,6 +19,8 @@ interface RejectionAnalysis {
 }
 
 const AIRejectionAnalysis: React.FC = () => {
+  const fullAIExamples = useFullAIExamples();
+
   const navigate = useNavigate();
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -65,7 +70,7 @@ const AIRejectionAnalysis: React.FC = () => {
         <p className="text-gray-500 mt-2">Decode why an application was rejected and get a concrete improvement plan.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4" data-full-ai-workspace="AIRejectionAnalysis"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Job title *</label>
@@ -73,7 +78,7 @@ const AIRejectionAnalysis: React.FC = () => {
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
-              required
+              required data-full-ai-field={fullAIExamples.bind({ current: jobTitle, change: (e) => setJobTitle(e.target.value), label: "jobTitle", manual: false, json: false, sample: '' }, "p1-2625", undefined)}
             />
           </div>
           <div>
@@ -81,7 +86,7 @@ const AIRejectionAnalysis: React.FC = () => {
             <input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
+              className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: companyName, change: (e) => setCompanyName(e.target.value), label: "companyName", manual: false, json: false, sample: '' }, "p1-2950", undefined)}
             />
           </div>
         </div>
@@ -90,7 +95,7 @@ const AIRejectionAnalysis: React.FC = () => {
           <select
             value={stageReachedAt}
             onChange={(e) => setStageReachedAt(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: stageReachedAt, change: (e) => setStageReachedAt(e.target.value), label: "stageReachedAt", manual: false, json: false, sample: 'initial_screening' }, "p1-3271", undefined)}
           >
             <option value="application">Application (no response)</option>
             <option value="initial_screening">Initial screening</option>
@@ -107,7 +112,7 @@ const AIRejectionAnalysis: React.FC = () => {
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
             rows={5}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: jobDescription, change: (e) => setJobDescription(e.target.value), label: "jobDescription", manual: false, json: false, sample: '' }, "p1-4061", undefined)}
           />
         </div>
         <div>
@@ -117,7 +122,7 @@ const AIRejectionAnalysis: React.FC = () => {
             onChange={(e) => setResumeText(e.target.value)}
             rows={6}
             className="w-full border rounded-lg px-3 py-2"
-            required
+            required data-full-ai-field={fullAIExamples.bind({ current: resumeText, change: (e) => setResumeText(e.target.value), label: "resumeText", manual: false, json: false, sample: '' }, "p1-4384", undefined)}
           />
         </div>
         <div>
@@ -127,7 +132,7 @@ const AIRejectionAnalysis: React.FC = () => {
             onChange={(e) => setRejectionFeedback(e.target.value)}
             rows={3}
             className="w-full border rounded-lg px-3 py-2"
-            placeholder="e.g. 'We chose a candidate with more cloud experience.'"
+            placeholder="e.g. 'We chose a candidate with more cloud experience.'" data-full-ai-field={fullAIExamples.bind({ current: rejectionFeedback, change: (e) => setRejectionFeedback(e.target.value), label: "rejectionFeedback", manual: false, json: false, sample: '' }, "p1-4734", undefined)}
           />
         </div>
 
@@ -205,7 +210,7 @@ const ListSection: React.FC<{ title: string; items: string[] }> = ({ title, item
   <div>
     <h3 className="font-semibold mb-2">{title}</h3>
     <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-      {items.map((it, i) => <li key={i}>{typeof it === 'string' ? it : JSON.stringify(it)}</li>)}
+      {items.map((it, i) => <li key={i}>{typeof it === 'string' ? it : <FormattedAIReport response={it} title={title} />}</li>)}
     </ul>
   </div>
 );

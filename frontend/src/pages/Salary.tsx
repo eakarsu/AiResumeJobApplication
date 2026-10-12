@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { salaryAPI, aiAPI } from '../services/api';
@@ -27,7 +28,7 @@ const Salary: React.FC = () => {
   const fetchSalaries = async () => {
     try {
       const response = await salaryAPI.getAll(search);
-      setSalaries(response.data.salaries);
+      setSalaries(recordList<SalaryResearch>(response.data, 'salaries'));
     } catch (error) {
       console.error('Failed to fetch salaries:', error);
     } finally {

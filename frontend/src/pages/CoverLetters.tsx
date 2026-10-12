@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { coverLettersAPI, resumesAPI } from '../services/api';
@@ -31,8 +32,8 @@ const CoverLetters: React.FC = () => {
   const fetchData = async () => {
     try {
       const [clRes, resumeRes] = await Promise.all([coverLettersAPI.getAll(), resumesAPI.getAll()]);
-      setCoverLetters(clRes.data);
-      setResumes(resumeRes.data);
+      setCoverLetters(recordList<CoverLetter>(clRes.data));
+      setResumes(recordList<Resume>(resumeRes.data));
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {

@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { interviewsAPI } from '../services/api';
@@ -28,7 +29,7 @@ const Interviews: React.FC = () => {
       if (filter === 'upcoming') params.upcoming = 'true';
       if (filter === 'completed') params.status = 'completed';
       const response = await interviewsAPI.getAll(params);
-      setInterviews(response.data);
+      setInterviews(recordList<Interview>(response.data));
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
     } finally {

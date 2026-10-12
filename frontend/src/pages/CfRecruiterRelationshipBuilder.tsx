@@ -1,5 +1,6 @@
 // // === Batch 07 Gaps & Frontend Mounts ===
 import React, { useState } from 'react';
+import FormattedAIReport from '../components/FormattedAIReport';
 
 export default function CfRecruiterRelationshipBuilder() {
   const [input, setInput] = useState('');
@@ -82,11 +83,7 @@ export default function CfRecruiterRelationshipBuilder() {
       {error && (
         <div style={{ marginTop: 16, padding: 12, background: '#fee', color: '#900', borderRadius: 6 }}>{error}</div>
       )}
-      {output && (
-        <pre style={{ marginTop: 16, padding: 12, background: '#f7f7f7', borderRadius: 6, overflow: 'auto', maxHeight: 480 }}>
-{JSON.stringify(output, null, 2)}
-        </pre>
-      )}
+      {output !== null && <FormattedAIReport response={output} title="AI result" />}
     </div>
   );
 }

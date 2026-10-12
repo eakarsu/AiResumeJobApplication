@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jobsAPI } from '../services/api';
@@ -29,8 +30,8 @@ const Jobs: React.FC = () => {
         search,
         ...filters
       });
-      setJobs(response.data.jobs);
-      setPagination(response.data.pagination);
+      setJobs(recordList<Job>(response.data, 'jobs'));
+      setPagination(response.data?.pagination || { page, pages: 1, total: 0 });
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
     } finally {

@@ -1,3 +1,5 @@
+
+import FullAIExamples, { useFullAIExamples } from "../components/FullAIExamples";
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -14,6 +16,8 @@ interface SchedulingResult {
 }
 
 const AIInterviewSchedulingOptimizer: React.FC = () => {
+  const fullAIExamples = useFullAIExamples();
+
   const navigate = useNavigate();
   const [candidateAvailability, setCandidateAvailability] = useState('');
   const [recruiterAvailability, setRecruiterAvailability] = useState('');
@@ -75,7 +79,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
         <p className="text-gray-500 mt-2">Rank slots based on energy, prep buffer, and recruiter constraints.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4" data-full-ai-workspace="AIInterviewSchedulingOptimizer"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Candidate availability *</label>
@@ -85,7 +89,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
               rows={6}
               className="w-full border rounded-lg px-3 py-2 font-mono text-xs"
               placeholder='[{"start":"2026-05-12T09:00","end":"2026-05-12T11:00"}, ...]'
-              required
+              required data-full-ai-field={fullAIExamples.bind({ current: candidateAvailability, change: (e) => setCandidateAvailability(e.target.value), label: "candidateAvailability", manual: false, json: false, sample: '' }, "p1-3643", undefined)}
             />
           </div>
           <div>
@@ -96,7 +100,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
               rows={6}
               className="w-full border rounded-lg px-3 py-2 font-mono text-xs"
               placeholder='[{"start":"2026-05-12T10:00","end":"2026-05-12T12:00"}, ...]'
-              required
+              required data-full-ai-field={fullAIExamples.bind({ current: recruiterAvailability, change: (e) => setRecruiterAvailability(e.target.value), label: "recruiterAvailability", manual: false, json: false, sample: '' }, "p1-4139", undefined)}
             />
           </div>
         </div>
@@ -104,7 +108,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Interview type</label>
-            <select value={interviewType} onChange={(e) => setInterviewType(e.target.value)} className="w-full border rounded-lg px-3 py-2">
+            <select value={interviewType} onChange={(e) => setInterviewType(e.target.value)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: interviewType, change: (e) => setInterviewType(e.target.value), label: "interviewType", manual: false, json: false, sample: 'technical' }, "p1-4705", undefined)}>
               <option value="phone_screen">Phone screen</option>
               <option value="technical">Technical</option>
               <option value="behavioral">Behavioral</option>
@@ -120,7 +124,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
               min={15}
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2"
+              className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: duration, change: (e) => setDuration(Number(e.target.value)), label: "duration", manual: false, json: false, sample: 60 }, "p1-5352", undefined)}
             />
           </div>
           <div>
@@ -128,7 +132,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
             <input
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
+              className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: timezone, change: (e) => setTimezone(e.target.value), label: "timezone", manual: false, json: false, sample: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }, "p1-5709", undefined)}
             />
           </div>
         </div>
@@ -138,7 +142,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
           <input
             value={priorities}
             onChange={(e) => setPriorities(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: priorities, change: (e) => setPriorities(e.target.value), label: "priorities", manual: false, json: false, sample: 'energy_peak, prep_buffer, morning_freshness' }, "p1-6037", undefined)}
           />
         </div>
         <div>
@@ -148,7 +152,7 @@ const AIInterviewSchedulingOptimizer: React.FC = () => {
             onChange={(e) => setConstraints(e.target.value)}
             rows={2}
             className="w-full border rounded-lg px-3 py-2"
-            placeholder='Free-form notes or JSON, e.g. {"avoidLateNights":true}'
+            placeholder='Free-form notes or JSON, e.g. {"avoidLateNights":true}' data-full-ai-field={fullAIExamples.bind({ current: constraints, change: (e) => setConstraints(e.target.value), label: "constraints", manual: false, json: false, sample: '' }, "p1-6337", undefined)}
           />
         </div>
 

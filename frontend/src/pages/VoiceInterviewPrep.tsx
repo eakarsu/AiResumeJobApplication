@@ -1,3 +1,6 @@
+import NativeAIControls from "../components/NativeAIControls";
+import useNativeAIRequest from "../components/useNativeAIRequest";
+import FormattedAIReport from "../components/FormattedAIReport";
 import { useEffect, useRef, useState } from 'react';
 import api from '../services/api';
 
@@ -7,6 +10,8 @@ import api from '../services/api';
  * the existing AI rubric scorer plus filler-word + WPM analytics.
  */
 export default function VoiceInterviewPrep() {
+  const nativeAIRequest = useNativeAIRequest();
+
   const [question, setQuestion] = useState('Tell me about a time you led a difficult project.');
   const [context, setContext] = useState('');
   const [transcript, setTranscript] = useState('');
@@ -71,12 +76,12 @@ export default function VoiceInterviewPrep() {
       const durationSec = startedAtRef.current
         ? Math.round((Date.now() - startedAtRef.current) / 1000)
         : undefined;
-      const res = await api.post('/voice-prep/analyze', {
+      const res = await nativeAIRequest.run((signal) => api.post('/voice-prep/analyze', {
         question,
         transcript,
         context,
         durationSec,
-      });
+      }, { signal }));
       setAnalysis(res.data);
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Analysis failed');
@@ -86,7 +91,7 @@ export default function VoiceInterviewPrep() {
   };
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
+    <NativeAIControls busy={nativeAIRequest.busy} onCancel={nativeAIRequest.cancel} context="Resume Job Application"><div className="space-y-4 max-w-3xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Voice Interview Practice</h1>
         <p className="text-gray-500 text-sm">
@@ -102,13 +107,13 @@ export default function VoiceInterviewPrep() {
       {error && <div className="bg-red-50 text-red-700 px-3 py-2 rounded">{error}</div>}
 
       <div className="bg-white border rounded p-4 space-y-3">
-        <input
+        <input data-ai-field="question"
           className="border p-2 rounded w-full"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Interview question"
         />
-        <input
+        <input data-ai-field="context"
           className="border p-2 rounded w-full"
           value={context}
           onChange={(e) => setContext(e.target.value)}
@@ -130,7 +135,7 @@ export default function VoiceInterviewPrep() {
           </button>
         </div>
 
-        <textarea
+        <textarea data-ai-field="transcript"
           className="border p-2 rounded w-full h-32"
           placeholder="Live transcript appears here (or paste one)…"
           value={transcript}
@@ -152,11 +157,11 @@ export default function VoiceInterviewPrep() {
             <div><strong>Words:</strong> {analysis.voiceMetrics?.wordCount} · <strong>WPM:</strong> {analysis.voiceMetrics?.wpm} ({analysis.voiceMetrics?.paceLabel})</div>
             <div><strong>Filler words:</strong> {analysis.voiceMetrics?.totalFillers}</div>
             {analysis.voiceMetrics?.fillerBreakdown && (
-              <pre className="text-xs mt-1">{JSON.stringify(analysis.voiceMetrics.fillerBreakdown, null, 2)}</pre>
+              <FormattedAIReport response={analysis.voiceMetrics.fillerBreakdown} />
             )}
           </div>
         </div>
       )}
-    </div>
+    </div></NativeAIControls>
   );
 }

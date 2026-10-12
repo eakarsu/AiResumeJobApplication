@@ -1,3 +1,4 @@
+import FormattedAIReport from '../components/FormattedAIReport';
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 
@@ -76,13 +77,11 @@ export default function LinkedinSync() {
         <div className="bg-white border rounded p-4 space-y-3">
           <h2 className="font-semibold">Parsed profile</h2>
           <div className="text-xs text-gray-500">Last synced: {new Date(profile.syncedAt).toLocaleString()}</div>
-          <pre className="text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 p-3 rounded">
-            {JSON.stringify(profile.parsedJson, null, 2)}
-          </pre>
+          <FormattedAIReport response={profile.parsedJson} title="Parsed profile" />
           {profile.gapInsights && (
             <div className="bg-amber-50 p-3 rounded text-sm">
               <div className="font-semibold mb-1">Gap insights</div>
-              <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(profile.gapInsights, null, 2)}</pre>
+              <FormattedAIReport response={profile.gapInsights} title="Gap insights" />
             </div>
           )}
         </div>

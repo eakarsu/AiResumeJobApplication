@@ -1,3 +1,5 @@
+
+import FullAIExamples, { useFullAIExamples } from "../components/FullAIExamples";
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -14,6 +16,8 @@ interface NegotiationResult {
 }
 
 const AIOfferNegotiationSimulator: React.FC = () => {
+  const fullAIExamples = useFullAIExamples();
+
   const navigate = useNavigate();
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -70,49 +74,49 @@ const AIOfferNegotiationSimulator: React.FC = () => {
         <p className="text-gray-500 mt-2">Simulate the counter-offer conversation with branching responses.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow border p-6 space-y-4" data-full-ai-workspace="AIOfferNegotiationSimulator"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Job title *</label>
-            <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
+            <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2" required data-full-ai-field={fullAIExamples.bind({ current: jobTitle, change: (e) => setJobTitle(e.target.value), label: "jobTitle", manual: false, json: false, sample: '' }, "p1-3046", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Company name</label>
-            <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+            <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: companyName, change: (e) => setCompanyName(e.target.value), label: "companyName", manual: false, json: false, sample: '' }, "p1-3303", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Location</label>
-            <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+            <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: location, change: (e) => setLocation(e.target.value), label: "location", manual: false, json: false, sample: '' }, "p1-3553", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Years experience</label>
-            <input type="number" min="0" max="50" value={yearsExperience} onChange={(e) => setYearsExperience(parseInt(e.target.value) || 0)} className="w-full border rounded-lg px-3 py-2" />
+            <input type="number" min="0" max="50" value={yearsExperience} onChange={(e) => setYearsExperience(parseInt(e.target.value) || 0)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: yearsExperience, change: (e) => setYearsExperience(parseInt(e.target.value) || 0), label: "yearsExperience", manual: false, json: false, sample: 5 }, "p1-3805", undefined)} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Offered base ($) *</label>
-            <input type="number" value={offeredBase} onChange={(e) => setOfferedBase(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
+            <input type="number" value={offeredBase} onChange={(e) => setOfferedBase(e.target.value)} className="w-full border rounded-lg px-3 py-2" required data-full-ai-field={fullAIExamples.bind({ current: offeredBase, change: (e) => setOfferedBase(e.target.value), label: "offeredBase", manual: false, json: false, sample: '' }, "p1-4199", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Offered bonus ($)</label>
-            <input type="number" value={offeredBonus} onChange={(e) => setOfferedBonus(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+            <input type="number" value={offeredBonus} onChange={(e) => setOfferedBonus(e.target.value)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: offeredBonus, change: (e) => setOfferedBonus(e.target.value), label: "offeredBonus", manual: false, json: false, sample: '' }, "p1-4481", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Offered equity</label>
-            <input value={offeredEquity} onChange={(e) => setOfferedEquity(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. 0.1% / 1000 RSU" />
+            <input value={offeredEquity} onChange={(e) => setOfferedEquity(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. 0.1% / 1000 RSU" data-full-ai-field={fullAIExamples.bind({ current: offeredEquity, change: (e) => setOfferedEquity(e.target.value), label: "offeredEquity", manual: false, json: false, sample: '' }, "p1-4753", undefined)} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Target base ($)</label>
-            <input type="number" value={targetBase} onChange={(e) => setTargetBase(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+            <input type="number" value={targetBase} onChange={(e) => setTargetBase(e.target.value)} className="w-full border rounded-lg px-3 py-2" data-full-ai-field={fullAIExamples.bind({ current: targetBase, change: (e) => setTargetBase(e.target.value), label: "targetBase", manual: false, json: false, sample: '' }, "p1-5129", undefined)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Competing offers</label>
-            <input value={competingOffers} onChange={(e) => setCompetingOffers(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. $180k base from Y" />
+            <input value={competingOffers} onChange={(e) => setCompetingOffers(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="e.g. $180k base from Y" data-full-ai-field={fullAIExamples.bind({ current: competingOffers, change: (e) => setCompetingOffers(e.target.value), label: "competingOffers", manual: false, json: false, sample: '' }, "p1-5399", undefined)} />
           </div>
         </div>
 

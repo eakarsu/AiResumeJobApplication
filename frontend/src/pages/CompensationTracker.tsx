@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 
@@ -39,8 +40,8 @@ export default function CompensationTracker() {
 
   const refreshMine = async () => {
     try {
-      const res = await api.get(`/compensation/mine?page=${page}&limit=10`);
-      setMine(res.data?.data || []);
+      const res = await api.get(`/compensation/mine?page=${page}&limit=20`);
+      setMine(recordList(res.data));
       setTotalPages(res.data?.pagination?.totalPages || 1);
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Load failed');

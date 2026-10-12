@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { skillsAPI, aiAPI } from '../services/api';
 import { UserSkill, Skill } from '../types';
@@ -44,10 +45,10 @@ const Skills: React.FC = () => {
         skillsAPI.getTrending(),
         skillsAPI.getGapAnalyses().catch(() => ({ data: [] }))
       ]);
-      setUserSkills(userRes.data);
-      setAllSkills(allRes.data);
-      setTrending(trendingRes.data);
-      setSavedAnalyses(analysesRes.data);
+      setUserSkills(recordList(userRes.data));
+      setAllSkills(recordList(allRes.data));
+      setTrending(recordList(trendingRes.data));
+      setSavedAnalyses(recordList(analysesRes.data));
     } catch (error) {
       console.error('Failed to fetch skills:', error);
     } finally {
@@ -97,7 +98,7 @@ const Skills: React.FC = () => {
       });
       // Refresh saved analyses list
       if (saved) {
-        skillsAPI.getGapAnalyses().then(res => setSavedAnalyses(res.data)).catch(() => {});
+        skillsAPI.getGapAnalyses().then(res => setSavedAnalyses(recordList(res.data))).catch(() => {});
       }
     } catch (error: any) {
       console.error('Failed to analyze skills gap:', error);
@@ -193,7 +194,7 @@ const Skills: React.FC = () => {
               Trending Skills
             </h2>
             <div className="space-y-3">
-              {trending.slice(0, 10).map((skill) => (
+              {trending.slice(0, 15).map((skill) => (
                 <div key={skill.id} className="flex items-center justify-between">
                   <span className="text-gray-700">{skill.name}</span>
                   <div className="flex items-center space-x-2">

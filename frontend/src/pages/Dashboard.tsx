@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -65,15 +66,15 @@ const Dashboard: React.FC = () => {
     try {
       const [statsRes, appsRes, interviewsRes, jobsRes] = await Promise.all([
         analyticsAPI.getDashboard(),
-        applicationsAPI.getAll({ limit: 5 }),
+        applicationsAPI.getAll({ limit: 15 }),
         interviewsAPI.getAll({ upcoming: 'true' }),
         jobsAPI.getRecommended().catch(() => ({ data: [] }))
       ]);
 
       setStats(statsRes.data);
-      setRecentApplications(appsRes.data.applications);
-      setUpcomingInterviews(interviewsRes.data.slice(0, 5));
-      setRecommendedJobs(jobsRes.data.slice(0, 5));
+      setRecentApplications(recordList<JobApplication>(appsRes.data, 'applications').slice(0, 15));
+      setUpcomingInterviews(recordList<Interview>(interviewsRes.data).slice(0, 15));
+      setRecommendedJobs(recordList<Job>(jobsRes.data, 'jobs').slice(0, 15));
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {

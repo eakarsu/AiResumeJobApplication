@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 
@@ -75,7 +76,7 @@ export default function Autopilot() {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (statusFilter) params.set('status', statusFilter);
       const res = await api.get(`/autopilot/drafts?${params.toString()}`);
-      setDrafts(res.data?.data || []);
+      setDrafts(recordList(res.data));
       setTotalPages(res.data?.pagination?.totalPages || 1);
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Failed to load drafts');

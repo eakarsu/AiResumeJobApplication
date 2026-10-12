@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { companiesAPI, aiAPI } from '../services/api';
@@ -28,7 +29,7 @@ const Companies: React.FC = () => {
   const fetchCompanies = async () => {
     try {
       const response = await companiesAPI.getAll({ search });
-      setCompanies(response.data.companies);
+      setCompanies(recordList<CompanyResearch>(response.data, 'companies'));
     } catch (error) {
       console.error('Failed to fetch companies:', error);
     } finally {

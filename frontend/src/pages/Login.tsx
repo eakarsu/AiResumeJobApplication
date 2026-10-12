@@ -26,9 +26,14 @@ const Login: React.FC = () => {
     }
   };
 
+  const demoEmail = import.meta.env.VITE_DEMO_EMAIL || '';
+  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || '';
+  const demoAvailable = Boolean(demoEmail && demoPassword);
   const handleDemoLogin = () => {
-    setEmail(import.meta.env.VITE_DEMO_EMAIL || '');
-    setPassword(import.meta.env.VITE_DEMO_PASSWORD || '');
+    if (!demoAvailable) return;
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError('');
   };
 
   return (
@@ -102,11 +107,14 @@ const Login: React.FC = () => {
 
           <div className="mt-6">
             <button
+              type="button"
               onClick={handleDemoLogin}
+              disabled={!demoAvailable || loading}
               className="w-full btn-secondary py-3"
             >
-              Auto Fill Demo Credentials
+              Fill demo credentials
             </button>
+            {!demoAvailable && <p className="text-sm text-gray-500 mt-2">Demo credentials are not configured for this local build.</p>}
           </div>
 
           <p className="text-center text-gray-500 mt-6">

@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { applicationsAPI } from '../services/api';
@@ -27,7 +28,7 @@ const Applications: React.FC = () => {
   const fetchApplications = async () => {
     try {
       const response = await applicationsAPI.getAll({ status: filter || undefined });
-      setApplications(response.data.applications);
+      setApplications(recordList<JobApplication>(response.data, 'applications'));
     } catch (error) {
       console.error('Failed to fetch applications:', error);
     } finally {

@@ -1,3 +1,4 @@
+import { recordList } from '../utils/recordList';
 import React, { useState } from 'react';
 import { aiAPI } from '../services/api';
 import { Sparkles, Loader2, MessageSquare, ThumbsUp, ThumbsDown, Send } from 'lucide-react';
@@ -28,8 +29,8 @@ const InterviewPrep: React.FC = () => {
     setMessage({ type: '', text: '' });
     try {
       const response = await aiAPI.generateInterviewQuestions({ jobTitle, company, interviewType, count: 10 });
-      setQuestions(response.data.questions || response.data);
-      setMessage({ type: 'success', text: `Generated ${(response.data.questions || response.data).length} interview questions!` });
+      setQuestions(recordList(response.data, 'questions'));
+      setMessage({ type: 'success', text: `Generated ${recordList(response.data, 'questions').length} interview questions!` });
     } catch (error: any) {
       console.error('Failed to generate questions:', error);
       setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to generate questions. Check your OpenRouter API key.' });
