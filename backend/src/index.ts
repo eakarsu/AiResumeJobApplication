@@ -25,6 +25,7 @@ import autopilotRoutes from './routes/autopilot';
 import linkedinRoutes from './routes/linkedin';
 import compensationRoutes from './routes/compensation';
 import voicePrepRoutes from './routes/voicePrep';
+import wave50cRoutes from './routes/wave50c';
 import { generalLimiter, authLimiter, aiLimiter, aiRateLimiterPerUser } from './middleware/rateLimiter';
 import { authenticateToken } from './middleware/auth';
 import prisma from './services/prisma';
@@ -87,6 +88,7 @@ app.use('/api/analytics', analyticsRoutes);
 // AI: coarse IP limiter, then user-aware 20/hr limiter (after auth)
 app.use('/api/ai', aiLimiter, authenticateToken, aiRateLimiterPerUser, aiRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/wave50c', wave50cRoutes);
 
 // NEW: resume upload (PDF/DOCX) → AI parse, application autopilot,
 // LinkedIn-style profile sync, compensation tracker, voice interview prep.
